@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mengerjakan UTS - STAI Al-Musdariyah</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Top Bar Ujian -->
+    <nav class="top-nav ujian-nav">
+        <div class="nav-brand">
+            <i class="fas fa-edit"></i>
+            <span>UTS - <span id="ujian-matkul-title"></span></span>
+        </div>
+        <div class="nav-timer">
+            <div class="timer-display">
+                <i class="fas fa-clock"></i>
+                <span id="timer-countdown">00:00:00</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="ujian-container">
+        <!-- Info Ujian -->
+        <div class="ujian-info-bar">
+            <div class="ujian-detail">
+                <p><strong>Nama:</strong> <span id="ujian-nama-mhs"></span></p>
+                <p><strong>NIM:</strong> <span id="ujian-nim-mhs"></span></p>
+            </div>
+            <div class="ujian-detail">
+                <p><strong>Mata Kuliah:</strong> <span id="ujian-matkul-info"></span></p>
+                <p><strong>Dosen:</strong> <span id="ujian-dosen-info"></span></p>
+            </div>
+        </div>
+
+        <!-- Petunjuk -->
+        <div class="ujian-petunjuk" id="ujian-petunjuk">
+        </div>
+
+        <!-- Soal Container -->
+        <div id="soal-container" class="soal-container">
+        </div>
+
+        <!-- Navigation Soal -->
+        <div class="soal-navigation">
+            <div id="soal-nav-buttons" class="nav-buttons">
+            </div>
+        </div>
+
+        <!-- Submit Bar -->
+        <div class="submit-bar">
+            <div class="submit-info">
+                <p>Soal dijawab: <span id="answered-count">0</span> / <span id="total-soal-count">0</span></p>
+            </div>
+            <button class="btn-submit-ujian" onclick="confirmSubmitUjian()">
+                <i class="fas fa-paper-plane"></i> Kumpulkan Jawaban
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Submit -->
+    <div id="modal-confirm-submit" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> Konfirmasi</h3>
+                <button class="modal-close" onclick="closeModal('modal-confirm-submit')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-icon">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <p style="text-align:center; font-size:16px;">Apakah Anda yakin ingin mengumpulkan jawaban?</p>
+                <p style="text-align:center; color:#e74c3c;">Jawaban yang sudah dikumpulkan tidak dapat diubah lagi.</p>
+                <div id="unanswered-warning" style="display:none;" class="warning-box">
+                    <p><i class="fas fa-exclamation-triangle"></i> Masih ada soal yang belum dijawab!</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('modal-confirm-submit')">Kembali</button>
+                <button class="btn-danger" onclick="submitUjian()">Ya, Kumpulkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Waktu Habis -->
+    <div id="modal-time-up" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-clock"></i> Waktu Habis!</h3>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-icon" style="color:#e74c3c;">
+                    <i class="fas fa-hourglass-end"></i>
+                </div>
+                <p style="text-align:center; font-size:16px;">Waktu pengerjaan telah habis!</p>
+                <p style="text-align:center;">Jawaban Anda akan dikumpulkan secara otomatis.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="forceSubmit()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/ujian.js"></script>
+</body>
+</html>

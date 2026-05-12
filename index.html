@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UTS Online - STAI Al-Musdariyah</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo-circle">
+                <i class="fas fa-university"></i>
+            </div>
+            <h1>UJIAN TENGAH SEMESTER</h1>
+            <h2>STAI AL-MUSDARIYAH</h2>
+            <p>Program Studi Hukum Ekonomi Syariah</p>
+            <p>Jurusan Syariah - Kota Cimahi</p>
+            <p class="tahun-akademik">Tahun Akademik 2025 - 2026</p>
+        </div>
+
+        <div class="login-tabs">
+            <button class="tab-btn active" onclick="switchTab('mahasiswa')">
+                <i class="fas fa-user-graduate"></i> Mahasiswa
+            </button>
+            <button class="tab-btn" onclick="switchTab('admin')">
+                <i class="fas fa-user-shield"></i> Admin
+            </button>
+        </div>
+
+        <div id="form-mahasiswa" class="login-form active">
+            <div class="form-group">
+                <label><i class="fas fa-id-card"></i> NIM</label>
+                <input type="text" id="nim-input" placeholder="Masukkan NIM Anda" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-lock"></i> Password</label>
+                <input type="password" id="password-mhs" placeholder="Masukkan Password" autocomplete="off">
+            </div>
+            <button class="btn-login" onclick="loginMahasiswa()">
+                <i class="fas fa-sign-in-alt"></i> Masuk
+            </button>
+        </div>
+
+        <div id="form-admin" class="login-form">
+            <div class="form-group">
+                <label><i class="fas fa-user"></i> Username</label>
+                <input type="text" id="admin-user" placeholder="Username Admin" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-lock"></i> Password</label>
+                <input type="password" id="admin-pass" placeholder="Password Admin" autocomplete="off">
+            </div>
+            <button class="btn-login" onclick="loginAdmin()">
+                <i class="fas fa-sign-in-alt"></i> Masuk sebagai Admin
+            </button>
+        </div>
+
+        <div id="login-message" class="message"></div>
+
+        <div class="login-footer">
+            <p>&copy; 2025 STAI Al-Musdariyah Kota Cimahi</p>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

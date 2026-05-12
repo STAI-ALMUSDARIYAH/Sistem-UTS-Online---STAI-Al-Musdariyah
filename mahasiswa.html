@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mahasiswa - UTS STAI Al-Musdariyah</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-brand">
+            <i class="fas fa-university"></i>
+            <span>UTS Online - STAI Al-Musdariyah</span>
+        </div>
+        <div class="nav-user">
+            <span id="mhs-info"><i class="fas fa-user-graduate"></i> <span id="mhs-nama"></span></span>
+            <button class="btn-logout" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+    <div class="mahasiswa-container">
+        <!-- Profile Card -->
+        <div class="profile-card">
+            <div class="profile-avatar">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="profile-info">
+                <h2 id="profile-nama"></h2>
+                <p>NIM: <span id="profile-nim"></span></p>
+                <p>Semester: <span id="profile-semester"></span> | Kelas: <span id="profile-kelas"></span></p>
+                <p>Program Studi Hukum Ekonomi Syariah</p>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="mhs-tabs">
+            <button class="mhs-tab active" onclick="showMhsSection('ujian-tersedia')">
+                <i class="fas fa-file-alt"></i> Ujian Tersedia
+            </button>
+            <button class="mhs-tab" onclick="showMhsSection('riwayat-ujian')">
+                <i class="fas fa-history"></i> Riwayat Ujian
+            </button>
+            <button class="mhs-tab" onclick="showMhsSection('nilai-saya')">
+                <i class="fas fa-star"></i> Nilai Saya
+            </button>
+        </div>
+
+        <!-- Ujian Tersedia -->
+        <section id="mhs-ujian-tersedia" class="mhs-section active">
+            <h3><i class="fas fa-file-alt"></i> Ujian yang Tersedia</h3>
+            <div id="ujian-list" class="ujian-cards">
+                <p class="empty-state">Tidak ada ujian yang tersedia saat ini.</p>
+            </div>
+        </section>
+
+        <!-- Riwayat Ujian -->
+        <section id="mhs-riwayat-ujian" class="mhs-section">
+            <h3><i class="fas fa-history"></i> Riwayat Ujian</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Mata Kuliah</th>
+                            <th>Tanggal Submit</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-riwayat">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Nilai Saya -->
+        <section id="mhs-nilai-saya" class="mhs-section">
+            <h3><i class="fas fa-star"></i> Nilai UTS Saya</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Mata Kuliah</th>
+                            <th>Dosen</th>
+                            <th>Nilai</th>
+                            <th>Grade</th>
+                            <th>Status</th>
+                            <th>Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-nilai-mhs">
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="remedial-info" class="remedial-box" style="display:none;">
+                <h4><i class="fas fa-exclamation-triangle"></i> Informasi Remedial</h4>
+                <p>Anda memiliki mata kuliah yang perlu remedial. Silakan hubungi dosen terkait:</p>
+                <div id="remedial-list"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/mahasiswa.js"></script>
+</body>
+</html>
