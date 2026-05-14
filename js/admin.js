@@ -1,11 +1,11 @@
 // ========================================
 // ADMIN.JS - Admin Dashboard Functions
 // STAI Al-Musdariyah - UTS Online System
-// Support: Soal Biasa + Soal Cerita/Kasus
+// Support: Soal Biasa + Soal Cerita + Pilihan+Alasan
 // ========================================
 
 let currentViewJawaban = null;
-let soalBuilderData = []; // Array of soal blocks
+let soalBuilderData = [];
 
 document.addEventListener('DOMContentLoaded', function () {
     let session = checkAuth('admin');
@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function () {
     populateMatkulSelects();
 });
 
-// ===== NAVIGATION =====
 function showSection(section, btnEl) {
     document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
@@ -30,12 +29,11 @@ function showSection(section, btnEl) {
     }
 }
 
-// ===== DASHBOARD =====
 function loadDashboard() {
     let mhs = DB.getMahasiswa();
     let soal = DB.getSoal();
     let jaw = DB.getJawaban();
-    let allMK = [...MATA_KULIAH_DATA.semester5, ...MATA_KULIAH_DATA.semester7];
+    let allMK = MATA_KULIAH_DATA.semester5.concat(MATA_KULIAH_DATA.semester7);
     document.getElementById('total-mahasiswa').textContent = mhs.length;
     document.getElementById('total-matkul').textContent = allMK.length;
     document.getElementById('total-soal').textContent = Object.keys(soal).length;
@@ -147,7 +145,6 @@ function loadMatkulTable(sem) {
     }).join('');
 }
 
-// ===== POPULATE SELECTS =====
 function populateMatkulSelects() {
     let opt = '<option value="">-- Pilih Mata Kuliah --</option><optgroup label="Semester 5">';
     MATA_KULIAH_DATA.semester5.forEach(mk => { opt += `<option value="${mk.id}">${mk.nama}</option>`; });
@@ -155,7 +152,7 @@ function populateMatkulSelects() {
     MATA_KULIAH_DATA.semester7.forEach(mk => { opt += `<option value="${mk.id}">${mk.nama}</option>`; });
     opt += '</optgroup>';
     ['select-matkul-soal', 'filter-matkul-nilai'].forEach(id => { let e = document.getElementById(id); if (e) e.innerHTML = opt; });
-    let all = [...MATA_KULIAH_DATA.semester5, ...MATA_KULIAH_DATA.semester7];
+    let all = MATA_KULIAH_DATA.semester5.concat(MATA_KULIAH_DATA.semester7);
     let o2 = '<option value="">-- Semua Mata Kuliah --</option>';
     all.forEach(mk => { o2 += `<option value="${mk.id}">${mk.nama}</option>`; });
     let e2 = document.getElementById('filter-matkul-hasil'); if (e2) e2.innerHTML = o2;
@@ -182,18 +179,11 @@ function loadSoalMatkul() {
         document.getElementById('petunjuk-soal').value = existing.petunjuk || '';
         document.getElementById('durasi-ujian').value = existing.durasi || 90;
         document.getElementById('waktu-ujian').value = existing.waktuUjian || '';
-
-        // Load blocks from existing data
         if (existing.blocks && existing.blocks.length > 0) {
             soalBuilderData = JSON.parse(JSON.stringify(existing.blocks));
         } else if (existing.soal && existing.soal.length > 0) {
-            // Backward compatible: old format single soal
             existing.soal.forEach(s => {
-                soalBuilderData.push({
-                    type: 'biasa',
-                    pertanyaan: s.pertanyaan,
-                    bobot: s.bobot
-                });
+                soalBuilderData.push({ type: 'biasa', pertanyaan: s.pertanyaan, bobot: s.bobot });
             });
         }
     } else {
@@ -205,10 +195,22 @@ function loadSoalMatkul() {
 }
 
 function addSoalBiasa() {
+    soalBuilderData.push({ type: 'biasa', pertanyaan: '', bobot: 10 });
+    renderSoalBuilder();
+    scrollToLastBlock();
+}
+
+function addSoalPilihan() {
     soalBuilderData.push({
-        type: 'biasa',
+        type: 'pilihan',
         pertanyaan: '',
-        bobot: 10
+        bobot: 10,
+        modePilihan: 'single', // 'single' (radio) atau 'multi' (checkbox)
+        butuhAlasan: true,
+        opsi: [
+            { label: 'A', teks: '' },
+            { label: 'B', teks: '' }
+        ]
     });
     renderSoalBuilder();
     scrollToLastBlock();
@@ -219,7 +221,7 @@ function addSoalCerita() {
         type: 'cerita',
         cerita: '',
         subSoal: [
-            { pertanyaan: '', bobot: 10 }
+            { tipe: 'esai', pertanyaan: '', bobot: 10 }
         ]
     });
     renderSoalBuilder();
@@ -228,37 +230,35 @@ function addSoalCerita() {
 
 function scrollToLastBlock() {
     setTimeout(() => {
-        let container = document.getElementById('soal-builder-container');
-        let blocks = container.querySelectorAll('.soal-block');
-        if (blocks.length > 0) {
-            blocks[blocks.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+        let blocks = document.querySelectorAll('#soal-builder-container .soal-block');
+        if (blocks.length > 0) blocks[blocks.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
 }
 
 function renderSoalBuilder() {
     let container = document.getElementById('soal-builder-container');
     if (soalBuilderData.length === 0) {
-        container.innerHTML = '<div class="empty-state" style="padding:30px;"><i class="fas fa-info-circle"></i> Belum ada soal. Klik tombol di atas untuk menambahkan soal.</div>';
+        container.innerHTML = '<div class="empty-state" style="padding:30px;"><i class="fas fa-info-circle"></i> Belum ada soal. Klik tombol di atas untuk menambahkan.</div>';
         return;
     }
 
-    let globalNo = 0; // Global soal numbering
+    let globalNo = 0;
     let html = '';
 
     soalBuilderData.forEach((block, blockIdx) => {
         if (block.type === 'biasa') {
             globalNo++;
             html += renderSoalBiasaBlock(blockIdx, globalNo, block);
+        } else if (block.type === 'pilihan') {
+            globalNo++;
+            html += renderSoalPilihanBlock(blockIdx, globalNo, block);
         } else if (block.type === 'cerita') {
             let startNo = globalNo + 1;
             let subCount = block.subSoal ? block.subSoal.length : 0;
             globalNo += subCount;
-            let endNo = globalNo;
-            html += renderSoalCeritaBlock(blockIdx, startNo, endNo, block);
+            html += renderSoalCeritaBlock(blockIdx, startNo, globalNo, block);
         }
     });
-
     container.innerHTML = html;
 }
 
@@ -267,12 +267,12 @@ function renderSoalBiasaBlock(blockIdx, soalNo, block) {
     <div class="soal-block soal-block-biasa" data-block="${blockIdx}">
         <div class="soal-block-header">
             <div class="soal-block-badge badge-biasa">
-                <i class="fas fa-pen"></i> Soal ${soalNo} (Soal Biasa)
+                <i class="fas fa-pen"></i> Soal ${soalNo} (Esai)
             </div>
             <div class="soal-block-actions">
-                <button class="btn-small btn-edit" onclick="moveBlock(${blockIdx},-1)" title="Pindah Atas"><i class="fas fa-arrow-up"></i></button>
-                <button class="btn-small btn-edit" onclick="moveBlock(${blockIdx},1)" title="Pindah Bawah"><i class="fas fa-arrow-down"></i></button>
-                <button class="btn-small btn-delete" onclick="removeBlock(${blockIdx})" title="Hapus"><i class="fas fa-trash"></i></button>
+                <button class="btn-small btn-edit" onclick="moveBlock(${blockIdx},-1)"><i class="fas fa-arrow-up"></i></button>
+                <button class="btn-small btn-edit" onclick="moveBlock(${blockIdx},1)"><i class="fas fa-arrow-down"></i></button>
+                <button class="btn-small btn-delete" onclick="removeBlock(${blockIdx})"><i class="fas fa-trash"></i></button>
             </div>
         </div>
         <div class="soal-block-body">
@@ -288,6 +288,74 @@ function renderSoalBiasaBlock(blockIdx, soalNo, block) {
     </div>`;
 }
 
+function renderSoalPilihanBlock(blockIdx, soalNo, block) {
+    let opsiHtml = '';
+    if (block.opsi) {
+        block.opsi.forEach((opt, i) => {
+            opsiHtml += `
+            <div class="opsi-item">
+                <div class="opsi-label">${opt.label}</div>
+                <textarea rows="2" placeholder="Isi pilihan ${opt.label}..." onchange="updateOpsi(${blockIdx},${i},this.value)">${escapeHtml(opt.teks || '')}</textarea>
+                <button class="btn-small btn-delete" onclick="removeOpsi(${blockIdx},${i})" title="Hapus pilihan"><i class="fas fa-times"></i></button>
+            </div>`;
+        });
+    }
+
+    return `
+    <div class="soal-block soal-block-pilihan" data-block="${blockIdx}">
+        <div class="soal-block-header">
+            <div class="soal-block-badge badge-pilihan">
+                <i class="fas fa-list-ul"></i> Soal ${soalNo} (Pilihan${block.butuhAlasan ? ' + Alasan' : ''})
+            </div>
+            <div class="soal-block-actions">
+                <button class="btn-small btn-edit" onclick="moveBlock(${blockIdx},-1)"><i class="fas fa-arrow-up"></i></button>
+                <button class="btn-small btn-edit" onclick="moveBlock(${blockIdx},1)"><i class="fas fa-arrow-down"></i></button>
+                <button class="btn-small btn-delete" onclick="removeBlock(${blockIdx})"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+        <div class="soal-block-body">
+            <div class="form-group">
+                <label>Pertanyaan</label>
+                <textarea rows="3" placeholder="Tuliskan pertanyaan..." onchange="updatePilihan(${blockIdx},'pertanyaan',this.value)">${escapeHtml(block.pertanyaan || '')}</textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mode Pilihan</label>
+                    <select onchange="updatePilihan(${blockIdx},'modePilihan',this.value)">
+                        <option value="single" ${block.modePilihan === 'single' ? 'selected' : ''}>Pilih SATU (Radio)</option>
+                        <option value="multi" ${block.modePilihan === 'multi' ? 'selected' : ''}>Pilih BEBERAPA (Checkbox)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Bobot Nilai</label>
+                    <input type="number" value="${block.bobot || 10}" min="1" max="100" onchange="updatePilihan(${blockIdx},'bobot',this.value)">
+                </div>
+                <div class="form-group">
+                    <label>Wajib Alasan?</label>
+                    <select onchange="updatePilihan(${blockIdx},'butuhAlasan',this.value === 'true')">
+                        <option value="true" ${block.butuhAlasan ? 'selected' : ''}>Ya, Wajib Beri Alasan</option>
+                        <option value="false" ${!block.butuhAlasan ? 'selected' : ''}>Tidak Perlu Alasan</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="opsi-container">
+                <div class="opsi-header">
+                    <h4><i class="fas fa-list"></i> Daftar Pilihan</h4>
+                    <button class="btn-primary btn-sm" onclick="addOpsi(${blockIdx})">
+                        <i class="fas fa-plus"></i> Tambah Pilihan
+                    </button>
+                </div>
+                <div class="opsi-list">
+                    ${opsiHtml || '<p class="empty-state" style="padding:10px;">Belum ada pilihan</p>'}
+                </div>
+                <p class="opsi-hint"><i class="fas fa-info-circle"></i> Tip: Untuk teks Arab, langsung paste/ketik di textarea. Untuk hijau (kaidah ushul), pisahkan tiap pilihan jadi 1 entry.</p>
+            </div>
+        </div>
+    </div>`;
+}
+
 function renderSoalCeritaBlock(blockIdx, startNo, endNo, block) {
     let subCount = block.subSoal ? block.subSoal.length : 0;
     let rangeText = subCount > 0 ? `Soal ${startNo} - ${endNo}` : 'Belum ada sub-soal';
@@ -296,21 +364,78 @@ function renderSoalCeritaBlock(blockIdx, startNo, endNo, block) {
     if (block.subSoal) {
         block.subSoal.forEach((sub, subIdx) => {
             let subNo = startNo + subIdx;
+            let tipe = sub.tipe || 'esai';
+            
             subHtml += `
-            <div class="sub-soal-item">
+            <div class="sub-soal-item" data-sub="${subIdx}">
                 <div class="sub-soal-header">
                     <span class="sub-soal-number">Soal ${subNo}</span>
-                    <button class="btn-small btn-delete" onclick="removeSubSoal(${blockIdx},${subIdx})" title="Hapus Sub-Soal"><i class="fas fa-times"></i></button>
-                </div>
+                    <div style="display:flex;gap:5px;align-items:center;">
+                        <select onchange="changeSubSoalTipe(${blockIdx},${subIdx},this.value)" style="padding:5px;border-radius:5px;border:1px solid #ddd;font-size:12px;">
+                            <option value="esai" ${tipe === 'esai' ? 'selected' : ''}>Esai</option>
+                            <option value="pilihan" ${tipe === 'pilihan' ? 'selected' : ''}>Pilihan + Alasan</option>
+                        </select>
+                        <button class="btn-small btn-delete" onclick="removeSubSoal(${blockIdx},${subIdx})"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>`;
+
+            if (tipe === 'pilihan') {
+                let opsiHtml = '';
+                if (sub.opsi) {
+                    sub.opsi.forEach((opt, oi) => {
+                        opsiHtml += `
+                        <div class="opsi-item">
+                            <div class="opsi-label">${opt.label}</div>
+                            <textarea rows="2" placeholder="Isi pilihan ${opt.label}..." onchange="updateSubOpsi(${blockIdx},${subIdx},${oi},this.value)">${escapeHtml(opt.teks || '')}</textarea>
+                            <button class="btn-small btn-delete" onclick="removeSubOpsi(${blockIdx},${subIdx},${oi})"><i class="fas fa-times"></i></button>
+                        </div>`;
+                    });
+                }
+                subHtml += `
                 <div class="form-group">
                     <label>Pertanyaan</label>
-                    <textarea rows="3" placeholder="Pertanyaan berdasarkan cerita/kasus di atas..." onchange="updateSubSoal(${blockIdx},${subIdx},'pertanyaan',this.value)">${escapeHtml(sub.pertanyaan || '')}</textarea>
+                    <textarea rows="3" placeholder="Pertanyaan..." onchange="updateSubSoal(${blockIdx},${subIdx},'pertanyaan',this.value)">${escapeHtml(sub.pertanyaan || '')}</textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Mode</label>
+                        <select onchange="updateSubSoal(${blockIdx},${subIdx},'modePilihan',this.value)">
+                            <option value="single" ${sub.modePilihan === 'single' ? 'selected' : ''}>Pilih SATU</option>
+                            <option value="multi" ${sub.modePilihan === 'multi' ? 'selected' : ''}>Pilih BEBERAPA</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Bobot</label>
+                        <input type="number" value="${sub.bobot || 10}" min="1" max="100" onchange="updateSubSoal(${blockIdx},${subIdx},'bobot',this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>Wajib Alasan?</label>
+                        <select onchange="updateSubSoal(${blockIdx},${subIdx},'butuhAlasan',this.value === 'true')">
+                            <option value="true" ${sub.butuhAlasan ? 'selected' : ''}>Ya</option>
+                            <option value="false" ${!sub.butuhAlasan ? 'selected' : ''}>Tidak</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="opsi-container">
+                    <div class="opsi-header">
+                        <h4>Pilihan</h4>
+                        <button class="btn-primary btn-sm" onclick="addSubOpsi(${blockIdx},${subIdx})"><i class="fas fa-plus"></i> Tambah Pilihan</button>
+                    </div>
+                    <div class="opsi-list">${opsiHtml || '<p class="empty-state" style="padding:8px;">Belum ada pilihan</p>'}</div>
+                </div>`;
+            } else {
+                subHtml += `
+                <div class="form-group">
+                    <label>Pertanyaan</label>
+                    <textarea rows="3" placeholder="Pertanyaan berdasarkan cerita..." onchange="updateSubSoal(${blockIdx},${subIdx},'pertanyaan',this.value)">${escapeHtml(sub.pertanyaan || '')}</textarea>
                 </div>
                 <div class="form-group">
                     <label>Bobot</label>
                     <input type="number" value="${sub.bobot || 10}" min="1" max="100" style="width:90px;" onchange="updateSubSoal(${blockIdx},${subIdx},'bobot',this.value)">
-                </div>
-            </div>`;
+                </div>`;
+            }
+
+            subHtml += `</div>`;
         });
     }
 
@@ -321,50 +446,118 @@ function renderSoalCeritaBlock(blockIdx, startNo, endNo, block) {
                 <i class="fas fa-book-open"></i> Soal Cerita / Kasus — ${rangeText}
             </div>
             <div class="soal-block-actions">
-                <button class="btn-small btn-edit" onclick="moveBlock(${blockIdx},-1)" title="Pindah Atas"><i class="fas fa-arrow-up"></i></button>
-                <button class="btn-small btn-edit" onclick="moveBlock(${blockIdx},1)" title="Pindah Bawah"><i class="fas fa-arrow-down"></i></button>
-                <button class="btn-small btn-delete" onclick="removeBlock(${blockIdx})" title="Hapus Blok"><i class="fas fa-trash"></i></button>
+                <button class="btn-small btn-edit" onclick="moveBlock(${blockIdx},-1)"><i class="fas fa-arrow-up"></i></button>
+                <button class="btn-small btn-edit" onclick="moveBlock(${blockIdx},1)"><i class="fas fa-arrow-down"></i></button>
+                <button class="btn-small btn-delete" onclick="removeBlock(${blockIdx})"><i class="fas fa-trash"></i></button>
             </div>
         </div>
         <div class="soal-block-body">
             <div class="form-group">
                 <label><i class="fas fa-book-reader"></i> Cerita / Narasi Kasus</label>
-                <textarea rows="6" class="cerita-textarea" placeholder="Tuliskan cerita, narasi, atau kasus di sini...&#10;&#10;Contoh: Pak Ahmad adalah seorang pengusaha yang ingin mengajukan pembiayaan murabahah ke Bank Syariah Mandiri untuk membeli sebuah ruko seharga Rp 500.000.000. Bank menawarkan margin 10% per tahun dengan jangka waktu 5 tahun..." onchange="updateCerita(${blockIdx},this.value)">${escapeHtml(block.cerita || '')}</textarea>
+                <textarea rows="6" class="cerita-textarea" placeholder="Tuliskan narasi/kasus..." onchange="updateCerita(${blockIdx},this.value)">${escapeHtml(block.cerita || '')}</textarea>
             </div>
-
             <div class="sub-soal-container">
                 <div class="sub-soal-title">
                     <h4><i class="fas fa-list-ol"></i> Pertanyaan berdasarkan cerita di atas:</h4>
-                    <button class="btn-primary btn-sm" onclick="addSubSoal(${blockIdx})">
-                        <i class="fas fa-plus"></i> Tambah Pertanyaan
-                    </button>
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn-primary btn-sm" onclick="addSubSoalEsai(${blockIdx})"><i class="fas fa-plus"></i> Tambah Esai</button>
+                        <button class="btn-pilihan btn-sm" onclick="addSubSoalPilihan(${blockIdx})"><i class="fas fa-plus"></i> Tambah Pilihan</button>
+                    </div>
                 </div>
-                <div class="sub-soal-list">
-                    ${subHtml || '<p class="empty-state" style="padding:15px;">Klik "Tambah Pertanyaan" untuk menambahkan soal.</p>'}
-                </div>
+                <div class="sub-soal-list">${subHtml || '<p class="empty-state" style="padding:15px;">Klik tombol untuk tambah pertanyaan.</p>'}</div>
             </div>
         </div>
     </div>`;
 }
 
-// ===== SOAL BUILDER DATA FUNCTIONS =====
-function updateBiasa(blockIdx, field, value) {
-    if (field === 'bobot') value = parseInt(value) || 10;
-    soalBuilderData[blockIdx][field] = value;
+// ===== UPDATE FUNCTIONS =====
+function updateBiasa(idx, field, val) {
+    if (field === 'bobot') val = parseInt(val) || 10;
+    soalBuilderData[idx][field] = val;
 }
 
-function updateCerita(blockIdx, value) {
-    soalBuilderData[blockIdx].cerita = value;
+function updateCerita(idx, val) { soalBuilderData[idx].cerita = val; }
+
+function updatePilihan(idx, field, val) {
+    if (field === 'bobot') val = parseInt(val) || 10;
+    soalBuilderData[idx][field] = val;
+    if (field === 'butuhAlasan') renderSoalBuilder(); // Refresh title
 }
 
-function updateSubSoal(blockIdx, subIdx, field, value) {
-    if (field === 'bobot') value = parseInt(value) || 10;
-    soalBuilderData[blockIdx].subSoal[subIdx][field] = value;
+function updateOpsi(blockIdx, opsiIdx, val) {
+    if (soalBuilderData[blockIdx].opsi && soalBuilderData[blockIdx].opsi[opsiIdx]) {
+        soalBuilderData[blockIdx].opsi[opsiIdx].teks = val;
+    }
 }
 
-function addSubSoal(blockIdx) {
+function addOpsi(blockIdx) {
+    if (!soalBuilderData[blockIdx].opsi) soalBuilderData[blockIdx].opsi = [];
+    let nextLabel = String.fromCharCode(65 + soalBuilderData[blockIdx].opsi.length); // A, B, C...
+    soalBuilderData[blockIdx].opsi.push({ label: nextLabel, teks: '' });
+    renderSoalBuilder();
+}
+
+function removeOpsi(blockIdx, opsiIdx) {
+    if (!confirm('Hapus pilihan ini?')) return;
+    soalBuilderData[blockIdx].opsi.splice(opsiIdx, 1);
+    // Re-label A, B, C...
+    soalBuilderData[blockIdx].opsi.forEach((o, i) => { o.label = String.fromCharCode(65 + i); });
+    renderSoalBuilder();
+}
+
+function updateSubSoal(blockIdx, subIdx, field, val) {
+    if (field === 'bobot') val = parseInt(val) || 10;
+    soalBuilderData[blockIdx].subSoal[subIdx][field] = val;
+}
+
+function changeSubSoalTipe(blockIdx, subIdx, newTipe) {
+    let sub = soalBuilderData[blockIdx].subSoal[subIdx];
+    sub.tipe = newTipe;
+    if (newTipe === 'pilihan') {
+        if (!sub.opsi) sub.opsi = [{ label: 'A', teks: '' }, { label: 'B', teks: '' }];
+        if (sub.modePilihan === undefined) sub.modePilihan = 'single';
+        if (sub.butuhAlasan === undefined) sub.butuhAlasan = true;
+    }
+    renderSoalBuilder();
+}
+
+function updateSubOpsi(blockIdx, subIdx, opsiIdx, val) {
+    let sub = soalBuilderData[blockIdx].subSoal[subIdx];
+    if (sub.opsi && sub.opsi[opsiIdx]) sub.opsi[opsiIdx].teks = val;
+}
+
+function addSubOpsi(blockIdx, subIdx) {
+    let sub = soalBuilderData[blockIdx].subSoal[subIdx];
+    if (!sub.opsi) sub.opsi = [];
+    let nextLabel = String.fromCharCode(65 + sub.opsi.length);
+    sub.opsi.push({ label: nextLabel, teks: '' });
+    renderSoalBuilder();
+}
+
+function removeSubOpsi(blockIdx, subIdx, opsiIdx) {
+    if (!confirm('Hapus pilihan?')) return;
+    let sub = soalBuilderData[blockIdx].subSoal[subIdx];
+    sub.opsi.splice(opsiIdx, 1);
+    sub.opsi.forEach((o, i) => { o.label = String.fromCharCode(65 + i); });
+    renderSoalBuilder();
+}
+
+function addSubSoalEsai(blockIdx) {
     if (!soalBuilderData[blockIdx].subSoal) soalBuilderData[blockIdx].subSoal = [];
-    soalBuilderData[blockIdx].subSoal.push({ pertanyaan: '', bobot: 10 });
+    soalBuilderData[blockIdx].subSoal.push({ tipe: 'esai', pertanyaan: '', bobot: 10 });
+    renderSoalBuilder();
+}
+
+function addSubSoalPilihan(blockIdx) {
+    if (!soalBuilderData[blockIdx].subSoal) soalBuilderData[blockIdx].subSoal = [];
+    soalBuilderData[blockIdx].subSoal.push({
+        tipe: 'pilihan',
+        pertanyaan: '',
+        bobot: 10,
+        modePilihan: 'single',
+        butuhAlasan: true,
+        opsi: [{ label: 'A', teks: '' }, { label: 'B', teks: '' }]
+    });
     renderSoalBuilder();
 }
 
@@ -376,17 +569,17 @@ function removeSubSoal(blockIdx, subIdx) {
 
 function removeBlock(blockIdx) {
     let block = soalBuilderData[blockIdx];
-    let label = block.type === 'cerita' ? 'blok soal cerita (beserta semua pertanyaannya)' : 'soal ini';
+    let label = block.type === 'cerita' ? 'blok soal cerita (beserta semua pertanyaan)' : 'soal ini';
     if (!confirm(`Hapus ${label}?`)) return;
     soalBuilderData.splice(blockIdx, 1);
     renderSoalBuilder();
 }
 
-function moveBlock(blockIdx, direction) {
-    let newIdx = blockIdx + direction;
+function moveBlock(idx, dir) {
+    let newIdx = idx + dir;
     if (newIdx < 0 || newIdx >= soalBuilderData.length) return;
-    let temp = soalBuilderData[blockIdx];
-    soalBuilderData[blockIdx] = soalBuilderData[newIdx];
+    let temp = soalBuilderData[idx];
+    soalBuilderData[idx] = soalBuilderData[newIdx];
     soalBuilderData[newIdx] = temp;
     renderSoalBuilder();
 }
@@ -396,22 +589,32 @@ function saveSoal() {
     let matkulId = document.getElementById('select-matkul-soal').value;
     if (!matkulId) { alert('Pilih mata kuliah!'); return; }
 
-    // Sync data from DOM before saving
-    syncSoalBuilderFromDOM();
-
     if (soalBuilderData.length === 0) { alert('Tambahkan minimal 1 soal!'); return; }
 
     // Validate
     let totalSoal = 0;
     for (let b of soalBuilderData) {
         if (b.type === 'biasa') {
-            if (!b.pertanyaan || !b.pertanyaan.trim()) { alert('Ada soal biasa yang pertanyaannya kosong!'); return; }
+            if (!b.pertanyaan || !b.pertanyaan.trim()) { alert('Ada soal esai yang pertanyaannya kosong!'); return; }
+            totalSoal++;
+        } else if (b.type === 'pilihan') {
+            if (!b.pertanyaan || !b.pertanyaan.trim()) { alert('Ada soal pilihan yang pertanyaannya kosong!'); return; }
+            if (!b.opsi || b.opsi.length < 2) { alert('Soal pilihan minimal harus punya 2 opsi!'); return; }
+            for (let o of b.opsi) {
+                if (!o.teks || !o.teks.trim()) { alert('Ada opsi pilihan yang kosong!'); return; }
+            }
             totalSoal++;
         } else if (b.type === 'cerita') {
             if (!b.cerita || !b.cerita.trim()) { alert('Ada soal cerita yang narasinya kosong!'); return; }
-            if (!b.subSoal || b.subSoal.length === 0) { alert('Ada soal cerita tanpa pertanyaan!'); return; }
+            if (!b.subSoal || b.subSoal.length === 0) { alert('Soal cerita harus punya pertanyaan!'); return; }
             for (let s of b.subSoal) {
-                if (!s.pertanyaan || !s.pertanyaan.trim()) { alert('Ada sub-pertanyaan yang kosong di soal cerita!'); return; }
+                if (!s.pertanyaan || !s.pertanyaan.trim()) { alert('Ada sub-pertanyaan kosong!'); return; }
+                if (s.tipe === 'pilihan') {
+                    if (!s.opsi || s.opsi.length < 2) { alert('Sub-soal pilihan minimal 2 opsi!'); return; }
+                    for (let o of s.opsi) {
+                        if (!o.teks || !o.teks.trim()) { alert('Ada opsi sub-soal kosong!'); return; }
+                    }
+                }
                 totalSoal++;
             }
         }
@@ -422,7 +625,7 @@ function saveSoal() {
     let waktuUjian = document.getElementById('waktu-ujian').value;
     let mk = DB.getMatkulById(matkulId);
 
-    // Build flat soal list (for backward compatibility & ujian page)
+    // Build flat list
     let flatSoal = [];
     let no = 0;
     soalBuilderData.forEach(block => {
@@ -430,19 +633,39 @@ function saveSoal() {
             no++;
             flatSoal.push({
                 no: no,
+                tipe: 'esai',
                 pertanyaan: block.pertanyaan,
                 bobot: block.bobot,
+                ceritaRef: null
+            });
+        } else if (block.type === 'pilihan') {
+            no++;
+            flatSoal.push({
+                no: no,
+                tipe: 'pilihan',
+                pertanyaan: block.pertanyaan,
+                bobot: block.bobot,
+                modePilihan: block.modePilihan,
+                butuhAlasan: block.butuhAlasan,
+                opsi: block.opsi,
                 ceritaRef: null
             });
         } else if (block.type === 'cerita') {
             block.subSoal.forEach(sub => {
                 no++;
-                flatSoal.push({
+                let item = {
                     no: no,
+                    tipe: sub.tipe || 'esai',
                     pertanyaan: sub.pertanyaan,
                     bobot: sub.bobot,
                     ceritaRef: block.cerita
-                });
+                };
+                if (sub.tipe === 'pilihan') {
+                    item.modePilihan = sub.modePilihan;
+                    item.butuhAlasan = sub.butuhAlasan;
+                    item.opsi = sub.opsi;
+                }
+                flatSoal.push(item);
             });
         }
     });
@@ -450,45 +673,13 @@ function saveSoal() {
     DB.setSoalMatkul(matkulId, {
         matkulId, matkulNama: mk.nama, dosen: mk.dosen,
         petunjuk, durasi, waktuUjian,
-        blocks: soalBuilderData,    // New format
-        soal: flatSoal,              // Flat format for ujian page
+        blocks: soalBuilderData,
+        soal: flatSoal,
         createdAt: new Date().toISOString()
     });
 
     DB.addActivity(`Admin membuat/update soal: ${mk.nama} (${totalSoal} soal)`);
-    alert(`✅ Soal berhasil disimpan!\n\nMata Kuliah: ${mk.nama}\nTotal Pertanyaan: ${totalSoal}\nBlok Soal: ${soalBuilderData.length}`);
-}
-
-function syncSoalBuilderFromDOM() {
-    let container = document.getElementById('soal-builder-container');
-    let blocks = container.querySelectorAll('.soal-block');
-
-    blocks.forEach((blockEl, i) => {
-        let blockIdx = parseInt(blockEl.dataset.block);
-        if (isNaN(blockIdx) || !soalBuilderData[blockIdx]) return;
-
-        let block = soalBuilderData[blockIdx];
-
-        if (block.type === 'biasa') {
-            let ta = blockEl.querySelector('textarea');
-            let inp = blockEl.querySelector('input[type="number"]');
-            if (ta) block.pertanyaan = ta.value;
-            if (inp) block.bobot = parseInt(inp.value) || 10;
-        } else if (block.type === 'cerita') {
-            let ceritaTa = blockEl.querySelector('.cerita-textarea');
-            if (ceritaTa) block.cerita = ceritaTa.value;
-
-            let subItems = blockEl.querySelectorAll('.sub-soal-item');
-            subItems.forEach((subEl, si) => {
-                if (block.subSoal && block.subSoal[si]) {
-                    let ta = subEl.querySelector('textarea');
-                    let inp = subEl.querySelector('input[type="number"]');
-                    if (ta) block.subSoal[si].pertanyaan = ta.value;
-                    if (inp) block.subSoal[si].bobot = parseInt(inp.value) || 10;
-                }
-            });
-        }
-    });
+    alert(`✅ Soal berhasil disimpan!\n\nMata Kuliah: ${mk.nama}\nTotal Pertanyaan: ${totalSoal}`);
 }
 
 function deleteSoalCurrent() {
@@ -507,13 +698,10 @@ function deleteSoalCurrent() {
     alert('✅ Soal dihapus!');
 }
 
-// ===== PREVIEW SOAL =====
+// ===== PREVIEW =====
 function previewSoal() {
-    syncSoalBuilderFromDOM();
-
     let area = document.getElementById('soal-preview-area');
     if (area.style.display === 'block') { area.style.display = 'none'; return; }
-
     if (soalBuilderData.length === 0) { alert('Belum ada soal!'); return; }
 
     let html = '<div class="soal-preview"><h3 style="color:#1a5276;margin-bottom:15px;"><i class="fas fa-eye"></i> Preview Soal (Tampilan Mahasiswa)</h3>';
@@ -526,35 +714,65 @@ function previewSoal() {
                 <span class="soal-number">Soal ${globalNo}</span>
                 <p class="soal-bobot">Bobot: ${block.bobot} poin</p>
                 <div class="soal-text">${escapeHtml(block.pertanyaan || '(Belum diisi)')}</div>
-                <div class="preview-answer-box"><i class="fas fa-pen-fancy"></i> Area jawaban mahasiswa</div>
+                <div class="preview-answer-box"><i class="fas fa-pen-fancy"></i> Area jawaban esai</div>
             </div>`;
+        } else if (block.type === 'pilihan') {
+            globalNo++;
+            html += renderPreviewPilihan(globalNo, block);
         } else if (block.type === 'cerita') {
-            let startNo = globalNo + 1;
             html += `<div class="preview-item preview-cerita">
-                <div class="preview-cerita-header">
-                    <i class="fas fa-book-open"></i> Bacalah cerita/kasus berikut untuk menjawab pertanyaan di bawahnya:
-                </div>
+                <div class="preview-cerita-header"><i class="fas fa-book-open"></i> Bacalah cerita berikut:</div>
                 <div class="preview-cerita-text">${escapeHtml(block.cerita || '(Belum diisi)')}</div>
                 <div class="preview-cerita-questions">`;
             if (block.subSoal) {
                 block.subSoal.forEach(sub => {
                     globalNo++;
-                    html += `<div class="preview-sub-soal">
-                        <span class="soal-number">Soal ${globalNo}</span>
-                        <p class="soal-bobot">Bobot: ${sub.bobot} poin</p>
-                        <div class="soal-text">${escapeHtml(sub.pertanyaan || '(Belum diisi)')}</div>
-                        <div class="preview-answer-box"><i class="fas fa-pen-fancy"></i> Area jawaban mahasiswa</div>
-                    </div>`;
+                    if (sub.tipe === 'pilihan') {
+                        html += renderPreviewPilihan(globalNo, sub, true);
+                    } else {
+                        html += `<div class="preview-sub-soal">
+                            <span class="soal-number">Soal ${globalNo}</span>
+                            <p class="soal-bobot">Bobot: ${sub.bobot} poin</p>
+                            <div class="soal-text">${escapeHtml(sub.pertanyaan || '')}</div>
+                            <div class="preview-answer-box"><i class="fas fa-pen-fancy"></i> Area jawaban</div>
+                        </div>`;
+                    }
                 });
             }
             html += `</div></div>`;
         }
     });
-
     html += '</div>';
     area.innerHTML = html;
     area.style.display = 'block';
     area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderPreviewPilihan(no, block, isSub) {
+    let opsiHtml = '';
+    if (block.opsi) {
+        block.opsi.forEach(opt => {
+            let inputType = block.modePilihan === 'multi' ? 'checkbox' : 'radio';
+            opsiHtml += `<label class="preview-opsi-label">
+                <input type="${inputType}" disabled> 
+                <span class="opsi-letter">${opt.label}.</span>
+                <span class="opsi-isi">${escapeHtml(opt.teks || '(kosong)')}</span>
+            </label>`;
+        });
+    }
+    return `<div class="preview-item ${isSub ? 'preview-sub-soal' : 'preview-pilihan'}">
+        <span class="soal-number">Soal ${no}</span>
+        <p class="soal-bobot">Bobot: ${block.bobot} poin</p>
+        <div class="soal-text">${escapeHtml(block.pertanyaan || '')}</div>
+        <div class="preview-opsi-list">
+            <p class="opsi-instruksi"><i class="fas fa-${block.modePilihan === 'multi' ? 'check-square' : 'dot-circle'}"></i> ${block.modePilihan === 'multi' ? 'Pilih satu atau lebih:' : 'Pilih salah satu:'}</p>
+            ${opsiHtml}
+        </div>
+        ${block.butuhAlasan ? `<div class="preview-alasan-box">
+            <label><i class="fas fa-pen"></i> Berikan Alasan:</label>
+            <div class="preview-answer-box">Area alasan mahasiswa</div>
+        </div>` : ''}
+    </div>`;
 }
 
 // ===== HASIL UJIAN =====
@@ -600,7 +818,6 @@ function viewJawaban(nim, matkulId) {
     if (!jaw) { alert('Tidak ditemukan!'); return; }
     currentViewJawaban = jaw;
     let mk = DB.getMatkulById(matkulId);
-    let soalData = DB.getSoalMatkul(matkulId);
     let content = document.getElementById('view-jawaban-content');
 
     let html = `<div class="jawaban-view">
@@ -616,10 +833,8 @@ function viewJawaban(nim, matkulId) {
             <p><strong>Submit:</strong> ${formatDateTime(jaw.submittedAt)}</p>
         </div>`;
 
-    // Check if soal has blocks (cerita support)
     let lastCerita = null;
     jaw.jawaban.forEach((j, i) => {
-        // Show cerita text if this soal references one
         if (j.ceritaRef && j.ceritaRef !== lastCerita) {
             lastCerita = j.ceritaRef;
             html += `<div class="jawaban-cerita-box">
@@ -627,12 +842,36 @@ function viewJawaban(nim, matkulId) {
                 <div class="jawaban-cerita-text">${escapeHtml(j.ceritaRef)}</div>
             </div>`;
         }
-        if (j.ceritaRef === null || j.ceritaRef === undefined) lastCerita = null;
+        if (!j.ceritaRef) lastCerita = null;
 
         html += `<div class="jawaban-item">
-            <div class="soal-q">Soal ${i + 1}: ${escapeHtml(j.pertanyaan)}</div>
-            <div class="jawaban-text">${escapeHtml(j.jawaban) || '<em style="color:#999;">Tidak dijawab</em>'}</div>
-        </div>`;
+            <div class="soal-q">Soal ${i + 1}: ${escapeHtml(j.pertanyaan)}</div>`;
+
+        if (j.tipe === 'pilihan') {
+            // Show pilihan info
+            html += `<div class="jawaban-pilihan-info">`;
+            if (j.opsi) {
+                j.opsi.forEach(opt => {
+                    let isPicked = j.pilihan && j.pilihan.includes(opt.label);
+                    html += `<div class="opsi-display ${isPicked ? 'opsi-dipilih' : ''}">
+                        ${isPicked ? '✓' : '○'} <strong>${opt.label}.</strong> ${escapeHtml(opt.teks)}
+                    </div>`;
+                });
+            }
+            html += `</div>`;
+            html += `<div class="jawaban-pilihan-result">
+                <strong>📌 Pilihan Mahasiswa:</strong> ${j.pilihan && j.pilihan.length ? j.pilihan.join(', ') : '<em style="color:#999;">Tidak memilih</em>'}
+            </div>`;
+            if (j.butuhAlasan) {
+                html += `<div class="jawaban-alasan">
+                    <strong>📝 Alasan:</strong>
+                    <div class="jawaban-text">${escapeHtml(j.alasan) || '<em style="color:#999;">Tidak diisi</em>'}</div>
+                </div>`;
+            }
+        } else {
+            html += `<div class="jawaban-text">${escapeHtml(j.jawaban) || '<em style="color:#999;">Tidak dijawab</em>'}</div>`;
+        }
+        html += `</div>`;
     });
 
     html += '</div>';
@@ -667,7 +906,23 @@ function downloadJawabanSingle(nim, matkulId) {
             t += `📖 CERITA/KASUS:\n${j.ceritaRef}\n\n`;
         }
         if (!j.ceritaRef) lastCerita = null;
-        t += `SOAL ${i + 1}:\n${j.pertanyaan}\n\nJAWABAN:\n${j.jawaban || '(Tidak dijawab)'}\n`;
+        t += `SOAL ${i + 1}:\n${j.pertanyaan}\n\n`;
+
+        if (j.tipe === 'pilihan') {
+            t += `PILIHAN:\n`;
+            if (j.opsi) {
+                j.opsi.forEach(opt => {
+                    let mark = (j.pilihan && j.pilihan.includes(opt.label)) ? '[✓]' : '[ ]';
+                    t += `  ${mark} ${opt.label}. ${opt.teks}\n`;
+                });
+            }
+            t += `\nPILIHAN MAHASISWA: ${j.pilihan && j.pilihan.length ? j.pilihan.join(', ') : '(tidak memilih)'}\n`;
+            if (j.butuhAlasan) {
+                t += `\nALASAN:\n${j.alasan || '(tidak diisi)'}\n`;
+            }
+        } else {
+            t += `JAWABAN:\n${j.jawaban || '(Tidak dijawab)'}\n`;
+        }
         t += `\n----------------------------------------------------\n\n`;
     });
 
@@ -690,7 +945,7 @@ function loadNilaiMatkul() {
     let mk = DB.getMatkulById(matkulId);
     let jaw = DB.getJawabanByMatkul(matkulId);
     let nilaiAll = DB.getNilai();
-    if (!jaw.length) { tb.innerHTML = '<tr><td colspan="8" class="empty-state">Belum ada jawaban untuk mata kuliah ini</td></tr>'; return; }
+    if (!jaw.length) { tb.innerHTML = '<tr><td colspan="8" class="empty-state">Belum ada jawaban</td></tr>'; return; }
     tb.innerHTML = jaw.map((j, i) => {
         let n = nilaiAll.find(x => x.nim === j.nim && x.matkulId === matkulId);
         let nv = n ? n.nilai : '', g = n ? n.grade : '-', s = n ? n.status : 'Belum Dinilai';
@@ -735,292 +990,144 @@ function loadJadwal() {
 }
 
 // ========================================
-// ===== TOOLS FUNCTIONS (FIXED) =====
+// ===== TOOLS FUNCTIONS =====
 // ========================================
-
 function loadToolsSelects() {
-    console.log('🔧 Loading tools selects...');
-    let opt = '<option value="">-- Pilih Mata Kuliah --</option>';
-    opt += '<optgroup label="Semester 5">';
-    MATA_KULIAH_DATA.semester5.forEach(function (mk) {
-        opt += '<option value="' + mk.id + '">' + mk.nama + '</option>';
-    });
+    let opt = '<option value="">-- Pilih Mata Kuliah --</option><optgroup label="Semester 5">';
+    MATA_KULIAH_DATA.semester5.forEach(mk => { opt += `<option value="${mk.id}">${mk.nama}</option>`; });
     opt += '</optgroup><optgroup label="Semester 7">';
-    MATA_KULIAH_DATA.semester7.forEach(function (mk) {
-        opt += '<option value="' + mk.id + '">' + mk.nama + '</option>';
-    });
+    MATA_KULIAH_DATA.semester7.forEach(mk => { opt += `<option value="${mk.id}">${mk.nama}</option>`; });
     opt += '</optgroup>';
-
-    let ids = ['tool-select-matkul-soal', 'tool-select-matkul-jawaban', 'tool-select-matkul-nilai'];
-    ids.forEach(function (id) {
-        let el = document.getElementById(id);
-        if (el) {
-            el.innerHTML = opt;
-            console.log('✅ Loaded options for: ' + id);
-        } else {
-            console.warn('⚠️ Element not found: ' + id);
-        }
+    ['tool-select-matkul-soal', 'tool-select-matkul-jawaban', 'tool-select-matkul-nilai'].forEach(id => {
+        let e = document.getElementById(id); if (e) e.innerHTML = opt;
     });
 }
 
-// ============ HAPUS SOAL ============
 function toolDeleteSoal() {
-    console.log('🗑️ toolDeleteSoal called');
     let sel = document.getElementById('tool-select-matkul-soal');
-    if (!sel) { alert('❌ Element select tidak ditemukan!'); return; }
-
     let matkulId = sel.value;
-    if (!matkulId) { alert('⚠️ Pilih mata kuliah terlebih dahulu!'); return; }
-
+    if (!matkulId) { alert('Pilih mata kuliah!'); return; }
     let mk = DB.getMatkulById(matkulId);
     let soal = DB.getSoalMatkul(matkulId);
-
-    if (!soal) { alert('ℹ️ Belum ada soal untuk mata kuliah ini!'); return; }
-
-    let jumlahSoal = (soal.soal && soal.soal.length) ? soal.soal.length : 0;
-
-    if (!confirm('⚠️ HAPUS SOAL?\n\nMata Kuliah: ' + mk.nama + '\nJumlah Soal: ' + jumlahSoal + '\n\nLanjutkan?')) {
-        return;
-    }
-
-    let result = DB.deleteSoalMatkul(matkulId);
-    console.log('Delete result:', result);
-
-    if (result) {
-        DB.addActivity('Admin menghapus soal: ' + mk.nama);
-        sel.value = '';
-        loadDashboard();
-        alert('✅ Soal "' + mk.nama + '" berhasil dihapus!');
-    } else {
-        alert('❌ Gagal menghapus soal!');
-    }
+    if (!soal) { alert('Belum ada soal!'); return; }
+    let jml = soal.soal ? soal.soal.length : 0;
+    if (!confirm(`⚠️ HAPUS SOAL?\n${mk.nama}\nJumlah: ${jml}\n\nLanjutkan?`)) return;
+    DB.deleteSoalMatkul(matkulId);
+    DB.addActivity(`Admin hapus soal: ${mk.nama}`);
+    sel.value = ''; loadDashboard();
+    alert(`✅ Soal "${mk.nama}" dihapus!`);
 }
 
-// ============ HAPUS JAWABAN PER MATKUL ============
 function toolDeleteJawabanMatkul() {
-    console.log('🗑️ toolDeleteJawabanMatkul called');
     let sel = document.getElementById('tool-select-matkul-jawaban');
-    if (!sel) { alert('❌ Element select tidak ditemukan!'); return; }
-
     let matkulId = sel.value;
-    if (!matkulId) { alert('⚠️ Pilih mata kuliah terlebih dahulu!'); return; }
-
+    if (!matkulId) { alert('Pilih mata kuliah!'); return; }
     let mk = DB.getMatkulById(matkulId);
-    let jawaban = DB.getJawabanByMatkul(matkulId);
-
-    if (jawaban.length === 0) { alert('ℹ️ Tidak ada jawaban untuk mata kuliah ini!'); return; }
-
-    if (!confirm('⚠️ HAPUS SEMUA JAWABAN?\n\nMata Kuliah: ' + mk.nama + '\nJumlah Jawaban: ' + jawaban.length + '\n\nNilai terkait juga akan dihapus.\nLanjutkan?')) {
-        return;
-    }
-
-    let count = DB.deleteJawabanByMatkul(matkulId);
+    let jaw = DB.getJawabanByMatkul(matkulId);
+    if (!jaw.length) { alert('Tidak ada jawaban!'); return; }
+    if (!confirm(`⚠️ Hapus ${jaw.length} jawaban ${mk.nama}? Nilai juga dihapus.`)) return;
+    let c = DB.deleteJawabanByMatkul(matkulId);
     DB.deleteNilaiByMatkul(matkulId);
-    console.log('Deleted:', count);
-
-    DB.addActivity('Admin menghapus ' + count + ' jawaban: ' + mk.nama);
-    sel.value = '';
-    loadDashboard();
-    alert('✅ ' + count + ' jawaban berhasil dihapus!');
+    DB.addActivity(`Admin hapus ${c} jawaban: ${mk.nama}`);
+    sel.value = ''; loadDashboard();
+    alert(`✅ ${c} jawaban dihapus!`);
 }
 
-// ============ HAPUS NILAI PER MATKUL ============
 function toolDeleteNilaiMatkul() {
-    console.log('🗑️ toolDeleteNilaiMatkul called');
     let sel = document.getElementById('tool-select-matkul-nilai');
-    if (!sel) { alert('❌ Element select tidak ditemukan!'); return; }
-
     let matkulId = sel.value;
-    if (!matkulId) { alert('⚠️ Pilih mata kuliah terlebih dahulu!'); return; }
-
+    if (!matkulId) { alert('Pilih mata kuliah!'); return; }
     let mk = DB.getMatkulById(matkulId);
-    let nilai = DB.getNilaiByMatkul(matkulId);
-
-    if (nilai.length === 0) { alert('ℹ️ Tidak ada nilai untuk mata kuliah ini!'); return; }
-
-    if (!confirm('⚠️ HAPUS SEMUA NILAI?\n\nMata Kuliah: ' + mk.nama + '\nJumlah Nilai: ' + nilai.length + '\n\nLanjutkan?')) {
-        return;
-    }
-
-    let count = DB.deleteNilaiByMatkul(matkulId);
-    console.log('Deleted:', count);
-
-    DB.addActivity('Admin menghapus ' + count + ' nilai: ' + mk.nama);
-    sel.value = '';
-    alert('✅ ' + count + ' nilai berhasil dihapus!');
+    let n = DB.getNilaiByMatkul(matkulId);
+    if (!n.length) { alert('Tidak ada nilai!'); return; }
+    if (!confirm(`⚠️ Hapus ${n.length} nilai ${mk.nama}?`)) return;
+    let c = DB.deleteNilaiByMatkul(matkulId);
+    DB.addActivity(`Admin hapus ${c} nilai: ${mk.nama}`);
+    sel.value = ''; alert(`✅ ${c} nilai dihapus!`);
 }
 
-// ============ HAPUS MAHASISWA ============
 function toolDeleteMahasiswa() {
-    console.log('🗑️ toolDeleteMahasiswa called');
     let inp = document.getElementById('tool-input-nim');
-    if (!inp) { alert('❌ Element input tidak ditemukan!'); return; }
-
     let nim = inp.value.trim();
-    if (!nim) { alert('⚠️ Masukkan NIM!'); return; }
-
-    let mhs = DB.findMahasiswa(nim);
-    if (!mhs) { alert('❌ Mahasiswa dengan NIM ' + nim + ' tidak ditemukan!'); return; }
-
-    let jawaban = DB.getJawabanByNim(nim);
-    let nilai = DB.getNilaiByNim(nim);
-
-    if (!confirm('⚠️ HAPUS MAHASISWA?\n\nNIM: ' + nim + '\nNama: ' + mhs.nama + '\n\nData yang akan dihapus:\n- Akun mahasiswa\n- ' + jawaban.length + ' jawaban ujian\n- ' + nilai.length + ' data nilai\n\nLanjutkan?')) {
-        return;
-    }
-
+    if (!nim) { alert('Masukkan NIM!'); return; }
+    let m = DB.findMahasiswa(nim);
+    if (!m) { alert('Tidak ditemukan!'); return; }
+    if (!confirm(`⚠️ Hapus ${m.nama} (${nim}) + semua data?`)) return;
     DB.deleteMahasiswaComplete(nim);
-    DB.addActivity('Admin menghapus mahasiswa: ' + mhs.nama + ' (' + nim + ')');
-    inp.value = '';
-    loadDashboard();
-    alert('✅ Mahasiswa ' + mhs.nama + ' beserta semua datanya berhasil dihapus!');
+    DB.addActivity(`Admin hapus: ${m.nama} (${nim})`);
+    inp.value = ''; loadDashboard();
+    alert('✅ Dihapus!');
 }
-
-// ============ DANGER ZONE ============
 
 function toolDeleteAllSoal() {
-    console.log('💥 toolDeleteAllSoal called');
-    let count = Object.keys(DB.getSoal()).length;
-    if (count === 0) { alert('ℹ️ Tidak ada soal untuk dihapus!'); return; }
-
-    let confirmText = prompt('⚠️ DANGER!\n\nAnda akan menghapus SEMUA SOAL (' + count + ' mata kuliah).\n\nKetik "HAPUS SEMUA SOAL" untuk konfirmasi:');
-    if (confirmText !== 'HAPUS SEMUA SOAL') { alert('❌ Konfirmasi salah. Pembatalan.'); return; }
-
+    let c = Object.keys(DB.getSoal()).length;
+    if (!c) { alert('Kosong!'); return; }
+    if (prompt(`Ketik "HAPUS SEMUA SOAL":`) !== 'HAPUS SEMUA SOAL') { alert('Batal.'); return; }
     DB.deleteAllSoal();
-    DB.addActivity('⚠️ Admin menghapus SEMUA soal (' + count + ' mata kuliah)');
-    loadDashboard();
-    alert('✅ ' + count + ' soal berhasil dihapus!');
+    DB.addActivity(`⚠️ Hapus SEMUA soal`);
+    loadDashboard(); alert('✅ Dihapus!');
 }
-
 function toolDeleteAllJawaban() {
-    console.log('💥 toolDeleteAllJawaban called');
-    let count = DB.getJawaban().length;
-    if (count === 0) { alert('ℹ️ Tidak ada jawaban untuk dihapus!'); return; }
-
-    let confirmText = prompt('⚠️ DANGER!\n\nAnda akan menghapus SEMUA JAWABAN (' + count + ' jawaban).\nNilai terkait juga akan dihapus.\n\nKetik "HAPUS SEMUA JAWABAN" untuk konfirmasi:');
-    if (confirmText !== 'HAPUS SEMUA JAWABAN') { alert('❌ Konfirmasi salah. Pembatalan.'); return; }
-
-    DB.deleteAllJawaban();
-    DB.deleteAllNilai();
-    DB.addActivity('⚠️ Admin menghapus SEMUA jawaban (' + count + ' data)');
-    loadDashboard();
-    alert('✅ ' + count + ' jawaban berhasil dihapus!');
+    let c = DB.getJawaban().length;
+    if (!c) { alert('Kosong!'); return; }
+    if (prompt(`Ketik "HAPUS SEMUA JAWABAN":`) !== 'HAPUS SEMUA JAWABAN') { alert('Batal.'); return; }
+    DB.deleteAllJawaban(); DB.deleteAllNilai();
+    DB.addActivity(`⚠️ Hapus SEMUA jawaban`);
+    loadDashboard(); alert('✅ Dihapus!');
 }
-
 function toolDeleteAllNilai() {
-    console.log('💥 toolDeleteAllNilai called');
-    let count = DB.getNilai().length;
-    if (count === 0) { alert('ℹ️ Tidak ada nilai untuk dihapus!'); return; }
-
-    let confirmText = prompt('⚠️ DANGER!\n\nAnda akan menghapus SEMUA NILAI (' + count + ' data).\n\nKetik "HAPUS SEMUA NILAI" untuk konfirmasi:');
-    if (confirmText !== 'HAPUS SEMUA NILAI') { alert('❌ Konfirmasi salah. Pembatalan.'); return; }
-
+    let c = DB.getNilai().length;
+    if (!c) { alert('Kosong!'); return; }
+    if (prompt(`Ketik "HAPUS SEMUA NILAI":`) !== 'HAPUS SEMUA NILAI') { alert('Batal.'); return; }
     DB.deleteAllNilai();
-    DB.addActivity('⚠️ Admin menghapus SEMUA nilai (' + count + ' data)');
-    alert('✅ ' + count + ' nilai berhasil dihapus!');
+    DB.addActivity(`⚠️ Hapus SEMUA nilai`);
+    alert('✅ Dihapus!');
 }
-
 function toolDeleteAllMahasiswa() {
-    console.log('💥 toolDeleteAllMahasiswa called');
-    let count = DB.getMahasiswa().length;
-    if (count === 0) { alert('ℹ️ Tidak ada mahasiswa untuk dihapus!'); return; }
-
-    let confirmText = prompt('⚠️ DANGER EXTREME!\n\nAnda akan menghapus SEMUA MAHASISWA (' + count + ' mahasiswa) beserta jawaban & nilai.\n\nKetik "HAPUS SEMUA MAHASISWA" untuk konfirmasi:');
-    if (confirmText !== 'HAPUS SEMUA MAHASISWA') { alert('❌ Konfirmasi salah. Pembatalan.'); return; }
-
-    DB.deleteAllMahasiswa();
-    DB.deleteAllJawaban();
-    DB.deleteAllNilai();
-    DB.addActivity('⚠️ Admin menghapus SEMUA mahasiswa (' + count + ' data)');
-    loadDashboard();
-    alert('✅ ' + count + ' mahasiswa berhasil dihapus!');
+    let c = DB.getMahasiswa().length;
+    if (!c) { alert('Kosong!'); return; }
+    if (prompt(`Ketik "HAPUS SEMUA MAHASISWA":`) !== 'HAPUS SEMUA MAHASISWA') { alert('Batal.'); return; }
+    DB.deleteAllMahasiswa(); DB.deleteAllJawaban(); DB.deleteAllNilai();
+    DB.addActivity(`⚠️ Hapus SEMUA mahasiswa`);
+    loadDashboard(); alert('✅ Dihapus!');
 }
-
 function toolClearActivity() {
-    if (!confirm('Bersihkan semua log aktivitas?')) return;
-    DB.clearActivity();
-    loadDashboard();
-    alert('✅ Log aktivitas dibersihkan!');
+    if (!confirm('Bersihkan log?')) return;
+    DB.clearActivity(); loadDashboard(); alert('✅ Dibersihkan!');
 }
-
 function toolResetAll() {
-    console.log('💥💥 toolResetAll called');
-    let confirmText = prompt('🔥 FACTORY RESET 🔥\n\nIni akan MENGHAPUS SEMUA DATA:\n- Semua mahasiswa\n- Semua soal\n- Semua jawaban\n- Semua nilai\n- Semua log aktivitas\n\nTIDAK DAPAT DIBATALKAN!\n\nKetik "RESET TOTAL" untuk konfirmasi:');
-    if (confirmText !== 'RESET TOTAL') { alert('❌ Konfirmasi salah. Pembatalan.'); return; }
-
-    if (!confirm('⚠️ KONFIRMASI TERAKHIR!\n\nApakah Anda BENAR-BENAR yakin ingin reset semua data?')) return;
-
+    if (prompt(`Ketik "RESET TOTAL":`) !== 'RESET TOTAL') { alert('Batal.'); return; }
+    if (!confirm('⚠️ YAKIN RESET TOTAL?')) return;
     DB.resetAll();
-    alert('✅ Semua data telah direset! Halaman akan dimuat ulang.');
-    setTimeout(function () { location.reload(); }, 800);
+    alert('✅ Reset! Reload...');
+    setTimeout(() => location.reload(), 500);
 }
-
-// ============ BACKUP & RESTORE ============
-
 function toolBackupAll() {
-    console.log('💾 toolBackupAll called');
-    let backup = {
-        version: '1.0',
-        backupDate: new Date().toISOString(),
-        institusi: 'STAI Al-Musdariyah Kota Cimahi',
-        mahasiswa: DB.getMahasiswa(),
-        soal: DB.getSoal(),
-        jawaban: DB.getJawaban(),
-        nilai: DB.getNilai(),
-        activity: DB.getActivity()
-    };
-
-    let json = JSON.stringify(backup, null, 2);
-    let blob = new Blob([json], { type: 'application/json' });
-    let url = URL.createObjectURL(blob);
-    let a = document.createElement('a');
-
-    let now = new Date();
-    let dateStr = now.getFullYear() +
-        String(now.getMonth() + 1).padStart(2, '0') +
-        String(now.getDate()).padStart(2, '0') + '_' +
-        String(now.getHours()).padStart(2, '0') +
-        String(now.getMinutes()).padStart(2, '0');
-
-    a.href = url;
-    a.download = 'BACKUP_UTS_STAI_' + dateStr + '.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    DB.addActivity('Admin download backup data');
-    alert('✅ Backup berhasil di-download!');
+    let b = { version: '1.0', backupDate: new Date().toISOString(), institusi: 'STAI Al-Musdariyah',
+        mahasiswa: DB.getMahasiswa(), soal: DB.getSoal(), jawaban: DB.getJawaban(), nilai: DB.getNilai(), activity: DB.getActivity() };
+    let blob = new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' });
+    let url = URL.createObjectURL(blob), a = document.createElement('a');
+    let d = new Date(), ds = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    a.href = url; a.download = `BACKUP_UTS_${ds}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    DB.addActivity('Backup downloaded'); alert('✅ Backup downloaded!');
 }
-
-function toolRestoreBackup(event) {
-    console.log('📥 toolRestoreBackup called');
-    let file = event.target.files[0];
-    if (!file) return;
-
-    if (!confirm('⚠️ RESTORE akan menimpa SEMUA data yang ada saat ini!\n\nLanjutkan?')) {
-        event.target.value = '';
-        return;
-    }
-
-    let reader = new FileReader();
-    reader.onload = function (e) {
+function toolRestoreBackup(e) {
+    let f = e.target.files[0]; if (!f) return;
+    if (!confirm('⚠️ Timpa semua data?')) { e.target.value = ''; return; }
+    let r = new FileReader();
+    r.onload = function (ev) {
         try {
-            let backup = JSON.parse(e.target.result);
-            if (!backup.version || !backup.mahasiswa) {
-                throw new Error('File backup tidak valid!');
-            }
-            localStorage.setItem('uts_mahasiswa', JSON.stringify(backup.mahasiswa || []));
-            localStorage.setItem('uts_soal', JSON.stringify(backup.soal || {}));
-            localStorage.setItem('uts_jawaban', JSON.stringify(backup.jawaban || []));
-            localStorage.setItem('uts_nilai', JSON.stringify(backup.nilai || []));
-            localStorage.setItem('uts_activity', JSON.stringify(backup.activity || []));
-            alert('✅ Restore berhasil! Halaman akan dimuat ulang.');
-            setTimeout(function () { location.reload(); }, 800);
-        } catch (err) {
-            alert('❌ Gagal restore: ' + err.message);
-        }
+            let b = JSON.parse(ev.target.result);
+            if (!b.version) throw new Error('Invalid!');
+            localStorage.setItem('uts_mahasiswa', JSON.stringify(b.mahasiswa || []));
+            localStorage.setItem('uts_soal', JSON.stringify(b.soal || {}));
+            localStorage.setItem('uts_jawaban', JSON.stringify(b.jawaban || []));
+            localStorage.setItem('uts_nilai', JSON.stringify(b.nilai || []));
+            localStorage.setItem('uts_activity', JSON.stringify(b.activity || []));
+            alert('✅ Restored! Reload...');
+            setTimeout(() => location.reload(), 500);
+        } catch (err) { alert('❌ Error: ' + err.message); }
     };
-    reader.readAsText(file);
-    event.target.value = '';
+    r.readAsText(f); e.target.value = '';
 }
