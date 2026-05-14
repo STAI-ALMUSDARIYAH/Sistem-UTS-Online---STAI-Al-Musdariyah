@@ -735,110 +735,292 @@ function loadJadwal() {
 }
 
 // ========================================
-// ===== TOOLS FUNCTIONS =====
+// ===== TOOLS FUNCTIONS (FIXED) =====
 // ========================================
+
 function loadToolsSelects() {
-    let opt = '<option value="">-- Pilih --</option><optgroup label="Semester 5">';
-    MATA_KULIAH_DATA.semester5.forEach(mk => { opt += `<option value="${mk.id}">${mk.nama}</option>`; });
+    console.log('🔧 Loading tools selects...');
+    let opt = '<option value="">-- Pilih Mata Kuliah --</option>';
+    opt += '<optgroup label="Semester 5">';
+    MATA_KULIAH_DATA.semester5.forEach(function (mk) {
+        opt += '<option value="' + mk.id + '">' + mk.nama + '</option>';
+    });
     opt += '</optgroup><optgroup label="Semester 7">';
-    MATA_KULIAH_DATA.semester7.forEach(mk => { opt += `<option value="${mk.id}">${mk.nama}</option>`; });
+    MATA_KULIAH_DATA.semester7.forEach(function (mk) {
+        opt += '<option value="' + mk.id + '">' + mk.nama + '</option>';
+    });
     opt += '</optgroup>';
-    ['tool-select-matkul-soal', 'tool-select-matkul-jawaban', 'tool-select-matkul-nilai'].forEach(id => {
-        let e = document.getElementById(id); if (e) e.innerHTML = opt;
+
+    let ids = ['tool-select-matkul-soal', 'tool-select-matkul-jawaban', 'tool-select-matkul-nilai'];
+    ids.forEach(function (id) {
+        let el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = opt;
+            console.log('✅ Loaded options for: ' + id);
+        } else {
+            console.warn('⚠️ Element not found: ' + id);
+        }
     });
 }
 
+// ============ HAPUS SOAL ============
 function toolDeleteSoal() {
-    let id = document.getElementById('tool-select-matkul-soal').value;
-    if (!id) { alert('Pilih matkul!'); return; }
-    let mk = DB.getMatkulById(id), s = DB.getSoalMatkul(id);
-    if (!s) { alert('Belum ada soal!'); return; }
-    if (!confirm(`⚠️ Hapus soal ${mk.nama}?`)) return;
-    DB.deleteSoalMatkul(id); DB.addActivity(`Admin hapus soal: ${mk.nama}`);
-    document.getElementById('tool-select-matkul-soal').value = ''; loadDashboard(); alert('✅ Dihapus!');
+    console.log('🗑️ toolDeleteSoal called');
+    let sel = document.getElementById('tool-select-matkul-soal');
+    if (!sel) { alert('❌ Element select tidak ditemukan!'); return; }
+
+    let matkulId = sel.value;
+    if (!matkulId) { alert('⚠️ Pilih mata kuliah terlebih dahulu!'); return; }
+
+    let mk = DB.getMatkulById(matkulId);
+    let soal = DB.getSoalMatkul(matkulId);
+
+    if (!soal) { alert('ℹ️ Belum ada soal untuk mata kuliah ini!'); return; }
+
+    let jumlahSoal = (soal.soal && soal.soal.length) ? soal.soal.length : 0;
+
+    if (!confirm('⚠️ HAPUS SOAL?\n\nMata Kuliah: ' + mk.nama + '\nJumlah Soal: ' + jumlahSoal + '\n\nLanjutkan?')) {
+        return;
+    }
+
+    let result = DB.deleteSoalMatkul(matkulId);
+    console.log('Delete result:', result);
+
+    if (result) {
+        DB.addActivity('Admin menghapus soal: ' + mk.nama);
+        sel.value = '';
+        loadDashboard();
+        alert('✅ Soal "' + mk.nama + '" berhasil dihapus!');
+    } else {
+        alert('❌ Gagal menghapus soal!');
+    }
 }
+
+// ============ HAPUS JAWABAN PER MATKUL ============
 function toolDeleteJawabanMatkul() {
-    let id = document.getElementById('tool-select-matkul-jawaban').value;
-    if (!id) { alert('Pilih matkul!'); return; }
-    let mk = DB.getMatkulById(id), j = DB.getJawabanByMatkul(id);
-    if (!j.length) { alert('Tidak ada jawaban!'); return; }
-    if (!confirm(`⚠️ Hapus ${j.length} jawaban ${mk.nama}? Nilai juga dihapus.`)) return;
-    let c = DB.deleteJawabanByMatkul(id); DB.deleteNilaiByMatkul(id);
-    DB.addActivity(`Admin hapus ${c} jawaban: ${mk.nama}`);
-    document.getElementById('tool-select-matkul-jawaban').value = ''; loadDashboard(); alert(`✅ ${c} jawaban dihapus!`);
+    console.log('🗑️ toolDeleteJawabanMatkul called');
+    let sel = document.getElementById('tool-select-matkul-jawaban');
+    if (!sel) { alert('❌ Element select tidak ditemukan!'); return; }
+
+    let matkulId = sel.value;
+    if (!matkulId) { alert('⚠️ Pilih mata kuliah terlebih dahulu!'); return; }
+
+    let mk = DB.getMatkulById(matkulId);
+    let jawaban = DB.getJawabanByMatkul(matkulId);
+
+    if (jawaban.length === 0) { alert('ℹ️ Tidak ada jawaban untuk mata kuliah ini!'); return; }
+
+    if (!confirm('⚠️ HAPUS SEMUA JAWABAN?\n\nMata Kuliah: ' + mk.nama + '\nJumlah Jawaban: ' + jawaban.length + '\n\nNilai terkait juga akan dihapus.\nLanjutkan?')) {
+        return;
+    }
+
+    let count = DB.deleteJawabanByMatkul(matkulId);
+    DB.deleteNilaiByMatkul(matkulId);
+    console.log('Deleted:', count);
+
+    DB.addActivity('Admin menghapus ' + count + ' jawaban: ' + mk.nama);
+    sel.value = '';
+    loadDashboard();
+    alert('✅ ' + count + ' jawaban berhasil dihapus!');
 }
+
+// ============ HAPUS NILAI PER MATKUL ============
 function toolDeleteNilaiMatkul() {
-    let id = document.getElementById('tool-select-matkul-nilai').value;
-    if (!id) { alert('Pilih matkul!'); return; }
-    let mk = DB.getMatkulById(id), n = DB.getNilaiByMatkul(id);
-    if (!n.length) { alert('Tidak ada nilai!'); return; }
-    if (!confirm(`⚠️ Hapus ${n.length} nilai ${mk.nama}?`)) return;
-    let c = DB.deleteNilaiByMatkul(id); DB.addActivity(`Admin hapus ${c} nilai: ${mk.nama}`);
-    document.getElementById('tool-select-matkul-nilai').value = ''; alert(`✅ ${c} nilai dihapus!`);
+    console.log('🗑️ toolDeleteNilaiMatkul called');
+    let sel = document.getElementById('tool-select-matkul-nilai');
+    if (!sel) { alert('❌ Element select tidak ditemukan!'); return; }
+
+    let matkulId = sel.value;
+    if (!matkulId) { alert('⚠️ Pilih mata kuliah terlebih dahulu!'); return; }
+
+    let mk = DB.getMatkulById(matkulId);
+    let nilai = DB.getNilaiByMatkul(matkulId);
+
+    if (nilai.length === 0) { alert('ℹ️ Tidak ada nilai untuk mata kuliah ini!'); return; }
+
+    if (!confirm('⚠️ HAPUS SEMUA NILAI?\n\nMata Kuliah: ' + mk.nama + '\nJumlah Nilai: ' + nilai.length + '\n\nLanjutkan?')) {
+        return;
+    }
+
+    let count = DB.deleteNilaiByMatkul(matkulId);
+    console.log('Deleted:', count);
+
+    DB.addActivity('Admin menghapus ' + count + ' nilai: ' + mk.nama);
+    sel.value = '';
+    alert('✅ ' + count + ' nilai berhasil dihapus!');
 }
+
+// ============ HAPUS MAHASISWA ============
 function toolDeleteMahasiswa() {
-    let nim = document.getElementById('tool-input-nim').value.trim();
-    if (!nim) { alert('Masukkan NIM!'); return; }
-    let m = DB.findMahasiswa(nim); if (!m) { alert('Tidak ditemukan!'); return; }
-    if (!confirm(`⚠️ Hapus ${m.nama} (${nim}) + semua data?`)) return;
-    DB.deleteMahasiswaComplete(nim); DB.addActivity(`Admin hapus: ${m.nama} (${nim})`);
-    document.getElementById('tool-input-nim').value = ''; loadDashboard(); alert('✅ Dihapus!');
+    console.log('🗑️ toolDeleteMahasiswa called');
+    let inp = document.getElementById('tool-input-nim');
+    if (!inp) { alert('❌ Element input tidak ditemukan!'); return; }
+
+    let nim = inp.value.trim();
+    if (!nim) { alert('⚠️ Masukkan NIM!'); return; }
+
+    let mhs = DB.findMahasiswa(nim);
+    if (!mhs) { alert('❌ Mahasiswa dengan NIM ' + nim + ' tidak ditemukan!'); return; }
+
+    let jawaban = DB.getJawabanByNim(nim);
+    let nilai = DB.getNilaiByNim(nim);
+
+    if (!confirm('⚠️ HAPUS MAHASISWA?\n\nNIM: ' + nim + '\nNama: ' + mhs.nama + '\n\nData yang akan dihapus:\n- Akun mahasiswa\n- ' + jawaban.length + ' jawaban ujian\n- ' + nilai.length + ' data nilai\n\nLanjutkan?')) {
+        return;
+    }
+
+    DB.deleteMahasiswaComplete(nim);
+    DB.addActivity('Admin menghapus mahasiswa: ' + mhs.nama + ' (' + nim + ')');
+    inp.value = '';
+    loadDashboard();
+    alert('✅ Mahasiswa ' + mhs.nama + ' beserta semua datanya berhasil dihapus!');
 }
+
+// ============ DANGER ZONE ============
+
 function toolDeleteAllSoal() {
-    let c = Object.keys(DB.getSoal()).length; if (!c) { alert('Kosong!'); return; }
-    if (prompt(`Ketik "HAPUS SEMUA SOAL":`) !== 'HAPUS SEMUA SOAL') { alert('Batal.'); return; }
-    DB.deleteAllSoal(); DB.addActivity(`⚠️ Hapus SEMUA soal`); loadDashboard(); alert('✅ Dihapus!');
+    console.log('💥 toolDeleteAllSoal called');
+    let count = Object.keys(DB.getSoal()).length;
+    if (count === 0) { alert('ℹ️ Tidak ada soal untuk dihapus!'); return; }
+
+    let confirmText = prompt('⚠️ DANGER!\n\nAnda akan menghapus SEMUA SOAL (' + count + ' mata kuliah).\n\nKetik "HAPUS SEMUA SOAL" untuk konfirmasi:');
+    if (confirmText !== 'HAPUS SEMUA SOAL') { alert('❌ Konfirmasi salah. Pembatalan.'); return; }
+
+    DB.deleteAllSoal();
+    DB.addActivity('⚠️ Admin menghapus SEMUA soal (' + count + ' mata kuliah)');
+    loadDashboard();
+    alert('✅ ' + count + ' soal berhasil dihapus!');
 }
+
 function toolDeleteAllJawaban() {
-    let c = DB.getJawaban().length; if (!c) { alert('Kosong!'); return; }
-    if (prompt(`Ketik "HAPUS SEMUA JAWABAN":`) !== 'HAPUS SEMUA JAWABAN') { alert('Batal.'); return; }
-    DB.deleteAllJawaban(); DB.deleteAllNilai(); DB.addActivity(`⚠️ Hapus SEMUA jawaban`); loadDashboard(); alert('✅ Dihapus!');
+    console.log('💥 toolDeleteAllJawaban called');
+    let count = DB.getJawaban().length;
+    if (count === 0) { alert('ℹ️ Tidak ada jawaban untuk dihapus!'); return; }
+
+    let confirmText = prompt('⚠️ DANGER!\n\nAnda akan menghapus SEMUA JAWABAN (' + count + ' jawaban).\nNilai terkait juga akan dihapus.\n\nKetik "HAPUS SEMUA JAWABAN" untuk konfirmasi:');
+    if (confirmText !== 'HAPUS SEMUA JAWABAN') { alert('❌ Konfirmasi salah. Pembatalan.'); return; }
+
+    DB.deleteAllJawaban();
+    DB.deleteAllNilai();
+    DB.addActivity('⚠️ Admin menghapus SEMUA jawaban (' + count + ' data)');
+    loadDashboard();
+    alert('✅ ' + count + ' jawaban berhasil dihapus!');
 }
+
 function toolDeleteAllNilai() {
-    let c = DB.getNilai().length; if (!c) { alert('Kosong!'); return; }
-    if (prompt(`Ketik "HAPUS SEMUA NILAI":`) !== 'HAPUS SEMUA NILAI') { alert('Batal.'); return; }
-    DB.deleteAllNilai(); DB.addActivity(`⚠️ Hapus SEMUA nilai`); alert('✅ Dihapus!');
+    console.log('💥 toolDeleteAllNilai called');
+    let count = DB.getNilai().length;
+    if (count === 0) { alert('ℹ️ Tidak ada nilai untuk dihapus!'); return; }
+
+    let confirmText = prompt('⚠️ DANGER!\n\nAnda akan menghapus SEMUA NILAI (' + count + ' data).\n\nKetik "HAPUS SEMUA NILAI" untuk konfirmasi:');
+    if (confirmText !== 'HAPUS SEMUA NILAI') { alert('❌ Konfirmasi salah. Pembatalan.'); return; }
+
+    DB.deleteAllNilai();
+    DB.addActivity('⚠️ Admin menghapus SEMUA nilai (' + count + ' data)');
+    alert('✅ ' + count + ' nilai berhasil dihapus!');
 }
+
 function toolDeleteAllMahasiswa() {
-    let c = DB.getMahasiswa().length; if (!c) { alert('Kosong!'); return; }
-    if (prompt(`Ketik "HAPUS SEMUA MAHASISWA":`) !== 'HAPUS SEMUA MAHASISWA') { alert('Batal.'); return; }
-    DB.deleteAllMahasiswa(); DB.deleteAllJawaban(); DB.deleteAllNilai();
-    DB.addActivity(`⚠️ Hapus SEMUA mahasiswa`); loadDashboard(); alert('✅ Dihapus!');
+    console.log('💥 toolDeleteAllMahasiswa called');
+    let count = DB.getMahasiswa().length;
+    if (count === 0) { alert('ℹ️ Tidak ada mahasiswa untuk dihapus!'); return; }
+
+    let confirmText = prompt('⚠️ DANGER EXTREME!\n\nAnda akan menghapus SEMUA MAHASISWA (' + count + ' mahasiswa) beserta jawaban & nilai.\n\nKetik "HAPUS SEMUA MAHASISWA" untuk konfirmasi:');
+    if (confirmText !== 'HAPUS SEMUA MAHASISWA') { alert('❌ Konfirmasi salah. Pembatalan.'); return; }
+
+    DB.deleteAllMahasiswa();
+    DB.deleteAllJawaban();
+    DB.deleteAllNilai();
+    DB.addActivity('⚠️ Admin menghapus SEMUA mahasiswa (' + count + ' data)');
+    loadDashboard();
+    alert('✅ ' + count + ' mahasiswa berhasil dihapus!');
 }
+
 function toolClearActivity() {
-    if (!confirm('Bersihkan log?')) return;
-    DB.clearActivity(); loadDashboard(); alert('✅ Dibersihkan!');
+    if (!confirm('Bersihkan semua log aktivitas?')) return;
+    DB.clearActivity();
+    loadDashboard();
+    alert('✅ Log aktivitas dibersihkan!');
 }
+
 function toolResetAll() {
-    if (prompt(`Ketik "RESET TOTAL":`) !== 'RESET TOTAL') { alert('Batal.'); return; }
-    if (!confirm('⚠️ YAKIN RESET TOTAL?')) return;
-    DB.resetAll(); alert('✅ Reset! Reload...'); setTimeout(() => location.reload(), 500);
+    console.log('💥💥 toolResetAll called');
+    let confirmText = prompt('🔥 FACTORY RESET 🔥\n\nIni akan MENGHAPUS SEMUA DATA:\n- Semua mahasiswa\n- Semua soal\n- Semua jawaban\n- Semua nilai\n- Semua log aktivitas\n\nTIDAK DAPAT DIBATALKAN!\n\nKetik "RESET TOTAL" untuk konfirmasi:');
+    if (confirmText !== 'RESET TOTAL') { alert('❌ Konfirmasi salah. Pembatalan.'); return; }
+
+    if (!confirm('⚠️ KONFIRMASI TERAKHIR!\n\nApakah Anda BENAR-BENAR yakin ingin reset semua data?')) return;
+
+    DB.resetAll();
+    alert('✅ Semua data telah direset! Halaman akan dimuat ulang.');
+    setTimeout(function () { location.reload(); }, 800);
 }
+
+// ============ BACKUP & RESTORE ============
+
 function toolBackupAll() {
-    let b = { version: '1.0', backupDate: new Date().toISOString(), institusi: 'STAI Al-Musdariyah',
-        mahasiswa: DB.getMahasiswa(), soal: DB.getSoal(), jawaban: DB.getJawaban(), nilai: DB.getNilai(), activity: DB.getActivity() };
-    let blob = new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' });
-    let url = URL.createObjectURL(blob), a = document.createElement('a');
-    let d = new Date(), ds = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-    a.href = url; a.download = `BACKUP_UTS_${ds}.json`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-    DB.addActivity('Backup downloaded'); alert('✅ Backup downloaded!');
-}
-function toolRestoreBackup(e) {
-    let f = e.target.files[0]; if (!f) return;
-    if (!confirm('⚠️ Timpa semua data?')) { e.target.value = ''; return; }
-    let r = new FileReader();
-    r.onload = function (ev) {
-        try {
-            let b = JSON.parse(ev.target.result);
-            if (!b.version) throw new Error('Invalid!');
-            localStorage.setItem('uts_mahasiswa', JSON.stringify(b.mahasiswa || []));
-            localStorage.setItem('uts_soal', JSON.stringify(b.soal || {}));
-            localStorage.setItem('uts_jawaban', JSON.stringify(b.jawaban || []));
-            localStorage.setItem('uts_nilai', JSON.stringify(b.nilai || []));
-            localStorage.setItem('uts_activity', JSON.stringify(b.activity || []));
-            alert('✅ Restored! Reload...'); setTimeout(() => location.reload(), 500);
-        } catch (err) { alert('❌ Error: ' + err.message); }
+    console.log('💾 toolBackupAll called');
+    let backup = {
+        version: '1.0',
+        backupDate: new Date().toISOString(),
+        institusi: 'STAI Al-Musdariyah Kota Cimahi',
+        mahasiswa: DB.getMahasiswa(),
+        soal: DB.getSoal(),
+        jawaban: DB.getJawaban(),
+        nilai: DB.getNilai(),
+        activity: DB.getActivity()
     };
-    r.readAsText(f); e.target.value = '';
+
+    let json = JSON.stringify(backup, null, 2);
+    let blob = new Blob([json], { type: 'application/json' });
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+
+    let now = new Date();
+    let dateStr = now.getFullYear() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0') + '_' +
+        String(now.getHours()).padStart(2, '0') +
+        String(now.getMinutes()).padStart(2, '0');
+
+    a.href = url;
+    a.download = 'BACKUP_UTS_STAI_' + dateStr + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    DB.addActivity('Admin download backup data');
+    alert('✅ Backup berhasil di-download!');
+}
+
+function toolRestoreBackup(event) {
+    console.log('📥 toolRestoreBackup called');
+    let file = event.target.files[0];
+    if (!file) return;
+
+    if (!confirm('⚠️ RESTORE akan menimpa SEMUA data yang ada saat ini!\n\nLanjutkan?')) {
+        event.target.value = '';
+        return;
+    }
+
+    let reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            let backup = JSON.parse(e.target.result);
+            if (!backup.version || !backup.mahasiswa) {
+                throw new Error('File backup tidak valid!');
+            }
+            localStorage.setItem('uts_mahasiswa', JSON.stringify(backup.mahasiswa || []));
+            localStorage.setItem('uts_soal', JSON.stringify(backup.soal || {}));
+            localStorage.setItem('uts_jawaban', JSON.stringify(backup.jawaban || []));
+            localStorage.setItem('uts_nilai', JSON.stringify(backup.nilai || []));
+            localStorage.setItem('uts_activity', JSON.stringify(backup.activity || []));
+            alert('✅ Restore berhasil! Halaman akan dimuat ulang.');
+            setTimeout(function () { location.reload(); }, 800);
+        } catch (err) {
+            alert('❌ Gagal restore: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
 }
