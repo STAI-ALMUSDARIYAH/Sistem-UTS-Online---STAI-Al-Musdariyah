@@ -1999,3 +1999,76 @@ tbody tr:nth-child(even):hover {
 textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     font-feature-settings: "liga" 1, "calt" 1;
 }
+
+/* ========== LEMBAR JAWABAN PROFESSIONAL (PDF/Print) ========== */
+.lembar-jawaban{background:#fff;color:#000;font-family:'Times New Roman',serif;padding:30px 40px;max-width:800px;margin:0 auto;line-height:1.5;font-size:12px;box-shadow:0 0 10px rgba(0,0,0.05);}
+.lj-header{display:flex;align-items:center;gap:20px;padding-bottom:10px;border-bottom:3px double #1a5276}
+.lj-logo-area{width:80px;text-align:center;flex-shrink:0}
+.lj-header-text{text-align:center;flex:1}
+.lj-header-text h2{font-size:16px;color:#1a5276;margin:0;font-weight:700;letter-spacing:.5px}
+.lj-header-text h3{font-size:13px;color:#1a5276;margin:2px 0;font-weight:700}
+.lj-header-text p{font-size:10px;color:#555;margin:1px 0}
+.lj-divider{border-top:2px solid #1a5276;margin-top:3px}
+.lj-title{text-align:center;margin-bottom:15px}
+.lj-title h2{text-decoration:underline;text-transform:uppercase;font-size:14px;margin:0;padding-bottom:3px}
+.lj-title p{font-size:12px;font-style:italic;margin:3px 0}
+.lj-info-table{width:100%;border-collapse:collapse;margin-bottom:15px}
+.lj-info-table td{padding:4px 6px;font-size:11px;vertical-align:top;border:1px solid #ddd}
+.lj-label{width:17%;font-weight:500}
+.lj-colon{width:2%;text-align:center}
+.lj-value{width:31%}
+.lj-instruksi{background:#fff8dc;border-left:4px solid #f39c12;padding:8px 12px;margin-bottom:15px;font-size:11px;font-style:italic}
+.lj-content-area{margin-bottom:20px}
+.lj-cerita{background:#f8f4ff;border:1px solid #d2b4de;border-left:4px solid #8e44ad;padding:10px 15px;border-radius:3px;margin-bottom:12px}
+.lj-cerita-label{font-weight:700;color:#8e44ad;font-size:11px;margin-bottom:5px}
+.lj-cerita-text{font-size:12px;line-height:1.6;white-space:pre-wrap}
+.lj-soal-block{border:1px solid #ddd;border-radius:4px;padding:12px;background:#fafafa;margin-bottom:12px;page-break-inside:avoid}
+.lj-soal-header{background:#1a5276;color:white;padding:5px 10px;border-radius:3px;display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px}
+.lj-soal-no{font-weight:700}
+.lj-soal-bobot{background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:10px}
+.lj-soal-pertanyaan{font-weight:500;padding:5px 0;line-height:1.6;text-align:justify;margin-bottom:10px}
+.lj-jawaban-area{border:1px dashed #999;padding:10px;min-height:60px;background:#fff}
+.lj-jawaban-label{font-weight:700;color:#1a5276;font-size:11px;text-decoration:underline;display:block;margin-bottom:5px}
+.lj-jawaban-text{font-size:12px;line-height:1.7;white-space:pre-wrap}
+.lj-pilihan-area{background:#fff;margin-top:8px;border:1px solid #d1f0e6;border-radius:6px;padding:10px}
+.lj-pilihan-instruksi{font-size:11px;font-weight:600;color:#16a085;margin-bottom:8px}
+.ujian-opsi-label{display:flex;align-items:flex-start;gap:12px;padding:10px;border:2px solid #d1f0e6;border-radius:6px;background:#fff;margin-bottom:5px;cursor:pointer}
+.ujian-opsi-label:hover{background:#f0fdf9;border-color:#16a085}
+.ujian-opsi-label input[type=checkbox],.ujian-opsi-label input[type=radio]{accent-color:#16a085;width:18px;height:18px;cursor:pointer}
+.ujian-opsi-letter{background:#16a085;color:#fff;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.ujian-opsi-text{flex:1;font-size:13px;line-height:1.6;color:#333;unicode-bidi:plaintext}
+.ujian-alasan-box{background:#fff8dc;border:2px solid #ffd700;border-radius:6px;padding:12px;margin-top:8px}
+.ujian-alasan-box label{display:block;color:#b8860b;font-weight:600;font-size:11px;margin-bottom:5px}
+.ujian-alasen-txt{width:100%;min-height:80px;padding:8px;border:2px solid #f0e68c;border-radius:6px;font-family:Poppins,sans-serif;font-size:13px;resize:vertical}
+.soal-card-pilihan{border-left:4px solid #16a085!important}
+.badge-mode{background:#16a085;color:#fff;padding:2px 10px;border-radius:10px;font-size:11px}
+/* Opsi display in view */
+.opsi-display{padding:6px 10px;margin:4px 0;border-radius:4px;border-left:3px solid #28a745;color:#155724;font-size:12px;line-height:1.5}
+.opsi-dipilih{background:#d4edda;border-left-color:#28a745;font-weight:500}
+/* LEMBAR NILAI */
+.lj-nilai-box{border:2px solid #1a5276;border-radius:4px;padding:12px;margin-top:20px;background:#f8f9fa;page-break-inside:avoid}
+.lj-nilai-box h3{text-align:center;color:#1a5276;font-size:13px;text-decoration:underline;margin:0 0 10px}
+.lj-nilai-table{width:100%;border-collapse:collapse;background:#fff;margin-bottom:15px}
+.lj-nilai-table th,.lj-nilai-table td{border:1px solid #888;padding:6px 8px;text-align:center;font-size:11px}
+.lj-nilai-table th{background:#1a5276;color:#fff;font-weight:700}
+.lj-nilai-empty{color:#999;letter-spacing:1px}
+.lj-total-row{background:#fff3cd;font-weight:700}
+.lj-nilai-total{color:#c0392b;font-size:14px;font-weight:700}
+/* TTD AREA */
+.lj-ttd-area{display:flex;justify-content:space-between;margin-top:25px;page-break-inside:avoid;flex-wrap:wrap;gap:30px}
+.lj-ttd-box{flex:1;font-size:11px}
+.lj-ttd-dosen{text-align:center}
+.lj-ttd-box textarea{min-height:80px;padding:8px;border:1px solid #999;border-radius:4px;background:#fff;font-size:11px;line-height:1.5}
+.lj-ttd-space{height:60px}
+.lj-ttd-name{text-decoration:underline;margin-top:5px}
+.lj-ttd-line{color:#999;margin-top:5px}
+.lj-footer{text-align:center;border-top:1px solid #ccc;padding-top:10px;margin-top:20px;font-size:9px;color:#888;font-style:italic}
+/* LOADING OVERLAY */
+.loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center}
+.loading-content{background:#fff;padding:30px 50px;border-radius:12px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+.loading-spinner{width:50px;height:50px;border:5px solid #f3f3f3;border-top:5px solid #2e86c1;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 15px}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}._loading-msg p{margin:0;font-size:14px;font-weight:500;color:#333}
+@media print{
+    body*{visibility:hidden!important}.lembar-jawaban,.lembar-jawaban *{visibility:visible!important;position:relative!important;left:auto!important;top:auto!important;width:auto!important;max-width:none!important}
+    .modal-footer,.modal-header,.modal-close{display:none!important}.lj-soal-block{page-break-inside:avoid!important}.lj-nilai-box{page-break-inside:avoid!important}.lj-ttd-area{page-break-inside:avoid!important}
+}
