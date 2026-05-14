@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -16,7 +15,7 @@
 <nav class="top-nav">
     <div class="nav-brand"><i class="fas fa-university"></i><span>Admin Panel - UTS STAI Al-Musdariyah</span></div>
     <div class="nav-user">
-        <span id="admin-name"><i class="fas fa-user-shield"></i> Admin</span>
+        <span><i class="fas fa-user-shield"></i> Admin</span>
         <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
     </div>
 </nav>
@@ -37,7 +36,6 @@
 
     <main class="main-content">
 
-        <!-- ===== DASHBOARD ===== -->
         <section id="section-dashboard" class="content-section active">
             <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
             <div class="stats-grid">
@@ -50,38 +48,45 @@
             <div class="recent-activity"><h3><i class="fas fa-history"></i> Aktivitas Terbaru</h3><div id="activity-log"><p class="empty-state">Belum ada aktivitas</p></div></div>
         </section>
 
-        <!-- ===== MAHASISWA ===== -->
         <section id="section-kelola-mahasiswa" class="content-section">
             <h2><i class="fas fa-user-graduate"></i> Kelola Mahasiswa</h2>
             <div class="action-bar">
                 <button class="btn-primary" onclick="showAddMahasiswaModal()"><i class="fas fa-plus"></i> Tambah Mahasiswa</button>
                 <button class="btn-secondary" onclick="showImportMahasiswaModal()"><i class="fas fa-file-import"></i> Import Batch</button>
             </div>
-            <div class="filter-bar"><select id="filter-semester-mhs" onchange="filterMahasiswa()"><option value="">Semua Semester</option><option value="5">Semester 5</option><option value="7">Semester 7</option></select><input type="text" id="search-mhs" placeholder="Cari NIM atau Nama..." oninput="filterMahasiswa()"></div>
+            <div class="filter-bar">
+                <select id="filter-semester-mhs" onchange="filterMahasiswa()"><option value="">Semua Semester</option><option value="5">Semester 5</option><option value="7">Semester 7</option></select>
+                <input type="text" id="search-mhs" placeholder="Cari NIM atau Nama..." oninput="filterMahasiswa()">
+            </div>
             <div class="table-container"><table><thead><tr><th>No</th><th>NIM</th><th>Nama</th><th>Semester</th><th>Kelas</th><th>Password</th><th>Aksi</th></tr></thead><tbody id="tbody-mahasiswa"></tbody></table></div>
         </section>
 
-        <!-- ===== MATA KULIAH ===== -->
         <section id="section-kelola-matakuliah" class="content-section">
             <h2><i class="fas fa-book"></i> Mata Kuliah</h2>
-            <div class="semester-tabs"><button class="sem-tab active" onclick="showSemesterMK(5,this)">Semester 5 (Non Reguler)</button><button class="sem-tab" onclick="showSemesterMK(7,this)">Semester 7 (Non Reguler)</button></div>
-            <div class="table-container"><table><thead><tr><th>No</th><th>Mata Kuliah</th><th>SKS</th><th>Dosen Pengampu</th><th>No. HP Dosen</th><th>Hari</th><th>Jam</th><th>Status Soal</th></tr></thead><tbody id="tbody-matakuliah"></tbody></table></div>
+            <div class="semester-tabs">
+                <button class="sem-tab active" onclick="showSemesterMK(5,this)">Semester 5 (Non Reguler)</button>
+                <button class="sem-tab" onclick="showSemesterMK(7,this)">Semester 7 (Non Reguler)</button>
+            </div>
+            <div class="table-container"><table><thead><tr><th>No</th><th>Mata Kuliah</th><th>SKS</th><th>Dosen Pengampu</th><th>No. HP</th><th>Hari</th><th>Jam</th><th>Status Soal</th></tr></thead><tbody id="tbody-matakuliah"></tbody></table></div>
         </section>
 
-        <!-- ===== KELOLA SOAL ===== -->
         <section id="section-kelola-soal" class="content-section">
             <h2><i class="fas fa-file-alt"></i> Kelola Soal UTS</h2>
-            <div class="action-bar"><select id="select-matkul-soal" onchange="loadSoalMatkul()"><option value="">-- Pilih Mata Kuliah --</option></select></div>
+            <div class="action-bar">
+                <select id="select-matkul-soal" onchange="loadSoalMatkul()"><option value="">-- Pilih Mata Kuliah --</option></select>
+            </div>
             <div id="soal-editor" class="soal-editor" style="display:none;">
-                <div class="soal-header-info"><h3 id="soal-matkul-name"></h3><p id="soal-dosen-name"></p></div>
+                <div class="soal-header-info">
+                    <h3 id="soal-matkul-name"></h3>
+                    <p id="soal-dosen-name"></p>
+                </div>
                 <div class="form-row">
                     <div class="form-group" style="flex:1;"><label>Petunjuk</label><textarea id="petunjuk-soal" rows="3" placeholder="Petunjuk pengerjaan..."></textarea></div>
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label>Durasi (menit)</label><input type="number" id="durasi-ujian" value="90" min="30" max="180"></div>
-                    <div class="form-group"><label>Waktu Ujian</label><input type="datetime-local" id="waktu-ujian"></div>
+                    <div class="form-group"><label>Tanggal & Waktu Ujian</label><input type="datetime-local" id="waktu-ujian"></div>
                 </div>
-                
                 <div class="soal-builder-header">
                     <h3><i class="fas fa-list-ol"></i> Daftar Soal</h3>
                     <div class="soal-builder-actions">
@@ -93,34 +98,26 @@
                 <div id="soal-builder-container"></div>
                 <div class="soal-actions" style="margin-top:20px;">
                     <button class="btn-success" onclick="saveSoal()"><i class="fas fa-save"></i> Simpan Semua Soal</button>
-                    <button class="btn-danger" onclick="deleteSoalCurrent()"><i class="fas fa-trash"></i> Hapus Semua Soal Matkul Ini</button>
+                    <button class="btn-danger" onclick="deleteSoalCurrent()"><i class="fas fa-trash"></i> Hapus Semua Soal</button>
                 </div>
                 <div style="margin-top:15px;"><button class="btn-secondary" onclick="previewSoal()"><i class="fas fa-eye"></i> Preview Soal</button></div>
                 <div id="soal-preview-area" style="display:none;"></div>
             </div>
         </section>
 
-        <!-- ===== HASIL UJIAN ===== -->
         <section id="section-hasil-ujian" class="content-section">
             <h2><i class="fas fa-clipboard-check"></i> Hasil Ujian Mahasiswa</h2>
-            
             <div class="action-bar" style="margin-bottom:10px;margin-top:15px;">
-                <button class="btn-success" onclick="downloadAllPDF()" title="Download semua jawaban dalam bentuk PDF rapi">
-                    <i class="fas fa-file-pdf"></i> Download Semua PDF
-                </button>
-                <button class="btn-primary" onclick="downloadRekapNilai()" title="Download rekap nilai tabel">
-                    <i class="fas fa-table"></i> Rekap Nilai (PDF)
-                </button>
+                <button class="btn-success" onclick="downloadAllPDF()"><i class="fas fa-file-pdf"></i> Download Semua PDF</button>
+                <button class="btn-primary" onclick="downloadRekapNilai()"><i class="fas fa-table"></i> Rekap Nilai (PDF)</button>
             </div>
-
             <div class="filter-bar">
                 <select id="filter-matkul-hasil" onchange="filterHasilUjian()"><option value="">-- Semua Mata Kuliah --</option></select>
                 <select id="filter-semester-hasil" onchange="filterHasilUjian()"><option value="">Semua Semester</option><option value="5">Semester 5</option><option value="7">Semester 7</option></select>
             </div>
-            <div class="table-container"><table><thead><tr><th>No</th><th>NIM</th><th>Nama</th><th>Mata Kuliah</th><th>Semester</th><th>Waktu Submit</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbody-hasil"></tbody></table></div>
+            <div class="table-container"><table><thead><tr><th>No</th><th>NIM</th><th>Nama</th><th>Mata Kuliah</th><th>Semester</th><th>Submit</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="tbody-hasil"></tbody></table></div>
         </section>
 
-        <!-- ===== INPUT NILAI ===== -->
         <section id="section-input-nilai" class="content-section">
             <h2><i class="fas fa-star"></i> Input Nilai</h2>
             <div class="filter-bar"><select id="filter-matkul-nilai" onchange="loadNilaiMatkul()"><option value="">-- Pilih Mata Kuliah --</option></select></div>
@@ -128,23 +125,25 @@
             <div class="action-bar" style="margin-top:15px;"><button class="btn-success" onclick="saveAllNilai()"><i class="fas fa-save"></i> Simpan Semua Nilai</button></div>
         </section>
 
-        <!-- ===== JADWAL ===== -->
         <section id="section-jadwal-uts" class="content-section">
             <h2><i class="fas fa-calendar-alt"></i> Jadwal UTS</h2>
-            <div class="jadwal-container"><h3>Semester 5 (Non Reguler)</h3><div class="table-container"><table class="jadwal-table"><thead><tr><th>No</th><th>Mata Kuliah</th><th>SKS</th><th>Dosen</th><th>No.HP</th><th>Hari</th><th>Ke</th><th>Jam</th></tr></thead><tbody id="jadwal-sem5"></tbody></table></div>
-            <h3 style="margin-top:30px;">Semester 7 (Non Reguler)</h3><div class="table-container"><table class="jadwal-table"><thead><tr><th>No</th><th>Mata Kuliah</th><th>SKS</th><th>Dosen</th><th>No.HP</th><th>Hari</th><th>Ke</th><th>Jam</th></tr></thead><tbody id="jadwal-sem7"></tbody></table></div>
+            <div class="jadwal-container">
+                <h3>Semester 5 (Non Reguler) - Kelas RPL</h3>
+                <div class="table-container"><table><thead><tr><th>No</th><th>Mata Kuliah</th><th>SKS</th><th>Dosen</th><th>No.HP</th><th>Hari</th><th>Ke</th><th>Jam</th></tr></thead><tbody id="jadwal-sem5"></tbody></table></div>
+                <h3 style="margin-top:30px;">Semester 7 (Non Reguler) - Kelas RPL</h3>
+                <div class="table-container"><table><thead><tr><th>No</th><th>Mata Kuliah</th><th>SKS</th><th>Dosen</th><th>No.HP</th><th>Hari</th><th>Ke</th><th>Jam</th></tr></thead><tbody id="jadwal-sem7"></tbody></table></div>
+            </div>
         </section>
 
-        <!-- ===== TOOLS & RESET ===== -->
         <section id="section-tools" class="content-section">
             <h2><i class="fas fa-tools"></i> Tools & Reset Data</h2>
-            <div class="warning-banner"><i class="fas fa-exclamation-triangle"></i><div><h3>⚠️ PERHATIAN!</h3><p>Hapus data secara permanen.</p></div></div>
-            <h3 style="color:#1a5276; margin:20px 0 15px;"><i class="fas fa-broom"></i> Hapus Data Spesifik</h3>
+            <div class="warning-banner"><i class="fas fa-exclamation-triangle"></i><div><h3>⚠️ PERHATIAN!</h3><p>Hapus data permanen!</p></div></div>
+            <h3 style="color:#1a5276;margin:20px 0 15px;"><i class="fas fa-broom"></i> Hapus Data Spesifik</h3>
             <div class="tools-grid">
-                <div class="tool-card"><div class="tool-icon bg-orange"><i class="fas fa-file-alt"></i></div><h3>Hapus Soal Matkul</h3><p>Hapus soal untuk satu mata kuliah</p><select id="tool-select-matkul-soal" class="tool-select"><option value="">-- Pilih --</option></select><button class="btn-danger" style="width:100%;" onclick="toolDeleteSoal()"><i class="fas fa-trash"></i> Hapus</button></div>
-                <div class="tool-card"><div class="tool-icon bg-purple"><i class="fas fa-clipboard-list"></i></div><h3>Hapus Jawaban per Matkul</h3><p>Hapus semua jawaban mata kuliah</p><select id="tool-select-matkul-jawaban" class="tool-select"><option value="">-- Pilih --</option></select><button class="btn-danger" style="width:100%;" onclick="toolDeleteJawabanMatkul()"><i class="fas fa-trash"></i> Hapus</button></div>
-                <div class="tool-card"><div class="tool-icon bg-blue"><i class="fas fa-star"></i></div><h3>Hapus Nilai per Matkul</h3><p>Hapus semua nilai mata kuliah</p><select id="tool-select-matkul-nilai" class="tool-select"><option value="">-- Pilih --</option></select><button class="btn-danger" style="width:100%;" onclick="toolDeleteNilaiMatkul()"><i class="fas fa-trash"></i> Hapus</button></div>
-                <div class="tool-card"><div class="tool-icon bg-green"><i class="fas fa-user-graduate"></i></div><h3>Hapus Mahasiswa</h3><p>Hapus mahasiswa + jawaban & nilai</p><input type="text" id="tool-input-nim" class="tool-select" placeholder="NIM Mahasiswa"><button class="btn-danger" style="width:100%;margin-top:8px;" onclick="toolDeleteMahasiswa()"><i class="fas fa-trash"></i> Hapus</button></div>
+                <div class="tool-card"><div class="tool-icon bg-orange"><i class="fas fa-file-alt"></i></div><h3>Hapus Soal Matkul</h3><p>Hapus soal mata kuliah</p><select id="tool-select-matkul-soal" class="tool-select"><option value="">-- Pilih --</option></select><button class="btn-danger" style="width:100%;" onclick="toolDeleteSoal()"><i class="fas fa-trash"></i> Hapus</button></div>
+                <div class="tool-card"><div class="tool-icon bg-purple"><i class="fas fa-clipboard-list"></i></div><h3>Hapus Jawaban Matkul</h3><p>Hapus semua jawaban matkul</p><select id="tool-select-matkul-jawaban" class="tool-select"><option value="">-- Pilih --</option></select><button class="btn-danger" style="width:100%;" onclick="toolDeleteJawabanMatkul()"><i class="fas fa-trash"></i> Hapus</button></div>
+                <div class="tool-card"><div class="tool-icon bg-blue"><i class="fas fa-star"></i></div><h3>Hapus Nilai Matkul</h3><p>Hapus semua nilai matkul</p><select id="tool-select-matkul-nilai" class="tool-select"><option value="">-- Pilih --</option></select><button class="btn-danger" style="width:100%;" onclick="toolDeleteNilaiMatkul()"><i class="fas fa-trash"></i> Hapus</button></div>
+                <div class="tool-card"><div class="tool-icon bg-green"><i class="fas fa-user-graduate"></i></div><h3>Hapus Mahasiswa</h3><p>Hapus mahasiswa + semua data</p><input type="text" id="tool-input-nim" class="tool-select" placeholder="Masukkan NIM"><button class="btn-danger" style="width:100%;margin-top:8px;" onclick="toolDeleteMahasiswa()"><i class="fas fa-trash"></i> Hapus</button></div>
             </div>
             <div class="danger-zone">
                 <h3><i class="fas fa-radiation"></i> DANGER ZONE - Reset Massal</h3>
@@ -159,7 +158,8 @@
                 </div>
             </div>
             <div class="backup-section">
-                <h3><i class="fas fa-database"></i> Backup & Restore Data</h3>
+                <h3><i class="fas fa-database"></i> Backup & Restore</h3>
+                <p>Download/upload backup data sistem.</p>
                 <div class="backup-actions">
                     <button class="btn-success" onclick="toolBackupAll()"><i class="fas fa-download"></i> Download Backup</button>
                     <button class="btn-primary" onclick="document.getElementById('restore-file').click()"><i class="fas fa-upload"></i> Restore Backup</button>
@@ -171,18 +171,44 @@
     </main>
 </div>
 
-<!-- MODALS -->
-<div id="modal-add-mhs" class="modal"><div class="modal-content"><div class="modal-header"><h3><i class="fas fa-user-plus"></i> Tambah Mahasiswa</h3><button class="modal-close" onclick="closeModal('modal-add-mhs')">&times;</button></div><div class="modal-body"><div class="form-group"><label>NIM</label><input type="text" id="add-nim"></div><div class="form-group"><label>Nama Lengkap</label><input type="text" id="add-nama"></div><div class="form-group"><label>Semester</label><select id="add-semester"><option value="5">Semester 5</option><option value="7">Semester 7</option></select></div><div class="form-group"><label>Kelas</label><input type="text" id="add-kelas" value="RPL"></div><div class="form-group"><label>Password</label><input type="text" id="add-password"></div></div><div class="modal-footer"><button class="btn-secondary" onclick="closeModal('modal-add-mhs')">Batal</button><button class="btn-primary" onclick="addMahasiswa()">Simpan</button></div></div></div>
+<div id="modal-add-mhs" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3><i class="fas fa-user-plus"></i> Tambah Mahasiswa</h3><button class="modal-close" onclick="closeModal('modal-add-mhs')">&times;</button></div>
+        <div class="modal-body">
+            <div class="form-group"><label>NIM</label><input type="text" id="add-nim"></div>
+            <div class="form-group"><label>Nama Lengkap</label><input type="text" id="add-nama"></div>
+            <div class="form-group"><label>Semester</label><select id="add-semester"><option value="5">Semester 5</option><option value="7">Semester 7</option></select></div>
+            <div class="form-group"><label>Kelas</label><input type="text" id="add-kelas" value="RPL"></div>
+            <div class="form-group"><label>Password</label><input type="text" id="add-password"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal('modal-add-mhs')">Batal</button>
+            <button class="btn-primary" onclick="addMahasiswa()">Simpan</button>
+        </div>
+    </div>
+</div>
 
-<div id="modal-import-mhs" class="modal"><div class="modal-content"><div class="modal-header"><h3><i class="fas fa-file-import"></i> Import Mahasiswa</h3><button class="modal-close" onclick="closeModal('modal-import-mhs')">&times;</button></div><div class="modal-body"><p>Format: NIM|Nama|Semester|Kelas|Password</p><textarea id="import-data" rows="10" placeholder="2023010001|Ahmad Fauzi|5|RPL|123456"></textarea></div><div class="modal-footer"><button class="btn-secondary" onclick="closeModal('modal-import-mhs')">Batal</button><button class="btn-primary" onclick="importMahasiswa()">Import</button></div></div></div>
+<div id="modal-import-mhs" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3><i class="fas fa-file-import"></i> Import Mahasiswa</h3><button class="modal-close" onclick="closeModal('modal-import-mhs')">&times;</button></div>
+        <div class="modal-body">
+            <p>Format: <code>NIM|Nama|Semester|Kelas|Password</code></p>
+            <textarea id="import-data" rows="10" placeholder="2023010001|Ahmad Fauzi|5|RPL|123456"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeModal('modal-import-mhs')">Batal</button>
+            <button class="btn-primary" onclick="importMahasiswa()">Import</button>
+        </div>
+    </div>
+</div>
 
 <div id="modal-view-jawaban" class="modal">
     <div class="modal-content modal-large" style="max-width:900px;">
         <div class="modal-header"><h3><i class="fas fa-eye"></i> Detail Jawaban Mahasiswa</h3><button class="modal-close" onclick="closeModal('modal-view-jawaban')">&times;</button></div>
         <div class="modal-body" id="view-jawaban-content" style="background:#e8e8e8;padding:15px;max-height:75vh;overflow-y:auto;"></div>
-        <div class="modal-footer" style="flex-wrap:wrap;padding:15px;background:white;border-top:1px solid #ddd;">
+        <div class="modal-footer" style="flex-wrap:wrap;background:white;border-top:1px solid #ddd;">
             <button class="btn-success" onclick="downloadJawabanPDF()"><i class="fas fa-file-pdf"></i> Download PDF</button>
-            <button class="btn-primary" onclick="downloadJawabanTXT()"><i class="fas fa-file-alt"></i> Download TXT</button>
+            <button class="btn-primary" onclick="downloadJawabanTXT(currentViewJawaban.nim, currentViewJawaban.matkulId)"><i class="fas fa-file-alt"></i> Download TXT</button>
             <button class="btn-secondary" onclick="printJawaban()"><i class="fas fa-print"></i> Print</button>
             <button class="btn-secondary" onclick="closeModal('modal-view-jawaban')">Tutup</button>
         </div>
