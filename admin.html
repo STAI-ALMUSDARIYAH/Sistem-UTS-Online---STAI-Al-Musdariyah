@@ -185,17 +185,17 @@
                     </div>
 
                     <!-- SOAL BUILDER -->
-                    <div class="soal-builder-header">
-                        <h3><i class="fas fa-list-ol"></i> Daftar Soal</h3>
-                        <div class="soal-builder-actions">
-                            <button class="btn-primary" onclick="addSoalBiasa()">
-                                <i class="fas fa-plus"></i> Tambah Soal Biasa
-                            </button>
-                            <button class="btn-cerita" onclick="addSoalCerita()">
-                                <i class="fas fa-book-open"></i> Tambah Soal Cerita / Kasus
-                            </button>
-                        </div>
-                    </div>
+                    <div class="soal-builder-actions">
+    <button class="btn-primary" onclick="addSoalBiasa()">
+        <i class="fas fa-pen"></i> + Soal Esai
+    </button>
+    <button class="btn-pilihan" onclick="addSoalPilihan()">
+        <i class="fas fa-list-ul"></i> + Soal Pilihan + Alasan
+    </button>
+    <button class="btn-cerita" onclick="addSoalCerita()">
+        <i class="fas fa-book-open"></i> + Soal Cerita / Kasus
+    </button>
+</div>
 
                     <div id="soal-builder-container">
                         <!-- Soal items will be rendered here -->
