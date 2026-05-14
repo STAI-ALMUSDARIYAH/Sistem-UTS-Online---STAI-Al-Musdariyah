@@ -792,8 +792,8 @@ function generateJawabanHTML(jaw, mk, nilai) {
         '<h2>SEKOLAH TINGGI AGAMA ISLAM AL-MUSDARIYAH</h2>' +
         '<h3>JURUSAN SYARIAH</h3>' +
         '<h3>PROGRAM STUDI HUKUM EKONOMI SYARIAH</h3>' +
-        '<p>Jl. K.H. Usman Dhomiri No. 156, Cimahi Tengah, Kota Cimahi - Jawa Barat</p>' +
-        '<p>Telp: (022) 6633113 | Email: info@stai-almusdariyah.ac.id</p>' +
+        '<p>Jl. Kamarung NO.25A,Kel. Citeureup, Kec. Cimahi Utara, Kota Cimahi - Jawa Barat</p>' +
+        '<p>Telp: (022) 86001421 | Email: staialmusdariyah@gmail.com</p>' +
         '</div></div>' +
         '<div class="lj-divider"></div>' +
         '<div class="lj-title"><h2>LEMBAR JAWABAN UJIAN TENGAH SEMESTER (UTS)</h2><p>Tahun Akademik 2025 / 2026</p></div>' +
