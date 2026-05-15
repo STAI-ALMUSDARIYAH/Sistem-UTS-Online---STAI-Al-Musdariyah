@@ -2856,3 +2856,35 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
 .login-info span {
     flex: 1;
 }
+
+/* ===== LOGIN INFO BOX ===== */
+.login-info {
+    background: #e8f4fd;
+    border-left: 3px solid #2e86c1;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #1a5276;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+}
+
+.login-info i {
+    color: #2e86c1;
+    margin-top: 2px;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.login-info span {
+    flex: 1;
+}
+
+.message.info {
+    display: block;
+    color: #1a5276;
+    background: #d4e6f1;
+}
