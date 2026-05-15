@@ -1410,3 +1410,206 @@ function hideLoading(loadingEl) {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ========================================
+// ===== MODE SELECTION (BARU) =====
+// ========================================
+
+let currentEditMode = null;
+let currentEditMatkulId = null;
+
+// Override loadSoalMatkul agar cek mode dulu
+let _originalLoadSoalMatkul = typeof loadSoalMatkul === 'function' ? loadSoalMatkul : null;
+
+loadSoalMatkul = function () {
+    let matkulId = document.getElementById('select-matkul-soal').value;
+    hideAllEditors();
+    if (!matkulId) return;
+
+    currentEditMatkulId = matkulId;
+    let mk = DB.getMatkulById(matkulId);
+    let existing = DB.getSoalMatkul(matkulId);
+
+    // Set name di semua editor
+    ['soal-matkul-name', 'kertas-matkul-name', 'gform-matkul-name'].forEach(id => {
+        let el = document.getElementById(id);
+        if (el) el.textContent = mk.nama;
+    });
+    ['soal-dosen-name', 'kertas-dosen-name', 'gform-dosen-name'].forEach(id => {
+        let el = document.getElementById(id);
+        if (el) el.textContent = 'Dosen: ' + mk.dosen;
+    });
+
+    if (existing && existing.mode) {
+        // Sudah ada soal, load sesuai mode
+        showEditorByMode(existing.mode, existing);
+    } else if (existing && existing.soal) {
+        // Backward compatible: soal lama = mode online
+        showEditorByMode('online', existing);
+    } else {
+        // Belum ada soal, tampilkan pilihan mode
+        document.getElementById('mode-select-area').style.display = 'block';
+    }
+};
+
+function hideAllEditors() {
+    document.getElementById('mode-select-area').style.display = 'none';
+    document.getElementById('soal-editor').style.display = 'none';
+    document.getElementById('kertas-editor').style.display = 'none';
+    document.getElementById('gform-editor').style.display = 'none';
+}
+
+function setMode(mode) {
+    hideAllEditors();
+    currentEditMode = mode;
+    let matkulId = currentEditMatkulId;
+    let mk = DB.getMatkulById(matkulId);
+    let existing = DB.getSoalMatkul(matkulId);
+    showEditorByMode(mode, existing);
+}
+
+function changeMode() {
+    if (!confirm('⚠️ Ganti mode ujian?\n\nJika soal sudah ada, data soal AKAN DIHAPUS untuk mata kuliah ini.\n\nLanjutkan?')) return;
+    let matkulId = currentEditMatkulId;
+    DB.deleteSoalMatkul(matkulId);
+    soalBuilderData = [];
+    hideAllEditors();
+    document.getElementById('mode-select-area').style.display = 'block';
+}
+
+function showEditorByMode(mode, existing) {
+    currentEditMode = mode;
+    let matkulId = currentEditMatkulId;
+    let mk = DB.getMatkulById(matkulId);
+
+    if (mode === 'online') {
+        document.getElementById('soal-editor').style.display = 'block';
+        // Load soal builder data
+        soalBuilderData = [];
+        if (existing) {
+            document.getElementById('petunjuk-soal').value = existing.petunjuk || '';
+            document.getElementById('durasi-ujian').value = existing.durasi || 90;
+            document.getElementById('waktu-ujian').value = existing.waktuUjian || '';
+            if (existing.blocks && existing.blocks.length > 0) {
+                soalBuilderData = JSON.parse(JSON.stringify(existing.blocks));
+            } else if (existing.soal && existing.soal.length > 0) {
+                existing.soal.forEach(s => {
+                    soalBuilderData.push({ type: 'biasa', pertanyaan: s.pertanyaan, bobot: s.bobot });
+                });
+            }
+        } else {
+            document.getElementById('petunjuk-soal').value = '';
+            document.getElementById('durasi-ujian').value = 90;
+            document.getElementById('waktu-ujian').value = '';
+        }
+        renderSoalBuilder();
+    } else if (mode === 'kertas') {
+        document.getElementById('kertas-editor').style.display = 'block';
+        if (existing && existing.mode === 'kertas') {
+            document.getElementById('kertas-petunjuk').value = existing.petunjuk || '';
+            document.getElementById('kertas-soal-text').value = existing.soalText || '';
+            document.getElementById('kertas-durasi').value = existing.durasi || 90;
+            document.getElementById('kertas-waktu').value = existing.waktuUjian || '';
+            document.getElementById('kertas-max-foto').value = existing.maxFoto || 5;
+        } else {
+            document.getElementById('kertas-petunjuk').value = 'Kerjakan soal berikut di kertas polio. Tulis Nama, NIM, dan Mata Kuliah di bagian atas. Foto jawaban Anda lalu upload melalui sistem ini.';
+            document.getElementById('kertas-soal-text').value = '';
+            document.getElementById('kertas-durasi').value = 90;
+            document.getElementById('kertas-waktu').value = '';
+            document.getElementById('kertas-max-foto').value = 5;
+        }
+    } else if (mode === 'gform') {
+        document.getElementById('gform-editor').style.display = 'block';
+        if (existing && existing.mode === 'gform') {
+            document.getElementById('gform-link').value = existing.gformLink || '';
+            document.getElementById('gform-petunjuk').value = existing.petunjuk || '';
+            document.getElementById('gform-durasi').value = existing.durasi || 90;
+            document.getElementById('gform-waktu').value = existing.waktuUjian || '';
+            updateGFormPreview();
+        } else {
+            document.getElementById('gform-link').value = '';
+            document.getElementById('gform-petunjuk').value = 'Klik tombol "Buka Google Form" lalu jawab semua pertanyaan. Pastikan klik Submit setelah selesai.';
+            document.getElementById('gform-durasi').value = 90;
+            document.getElementById('gform-waktu').value = '';
+        }
+        // Live preview link
+        document.getElementById('gform-link').addEventListener('input', updateGFormPreview);
+    }
+}
+
+function updateGFormPreview() {
+    let link = document.getElementById('gform-link').value.trim();
+    let preview = document.getElementById('gform-preview-link');
+    if (link) {
+        preview.href = link;
+        preview.textContent = link;
+        preview.style.color = '#27ae60';
+    } else {
+        preview.href = '#';
+        preview.textContent = 'Belum ada link';
+        preview.style.color = '#999';
+    }
+}
+
+// ===== SAVE KERTAS POLIO =====
+function saveKertas() {
+    let matkulId = currentEditMatkulId;
+    if (!matkulId) { alert('Pilih mata kuliah!'); return; }
+    let soalText = document.getElementById('kertas-soal-text').value.trim();
+    if (!soalText) { alert('Tulis soal yang akan dikerjakan di kertas!'); return; }
+
+    let mk = DB.getMatkulById(matkulId);
+    let petunjuk = document.getElementById('kertas-petunjuk').value.trim();
+    let durasi = parseInt(document.getElementById('kertas-durasi').value) || 90;
+    let waktuUjian = document.getElementById('kertas-waktu').value;
+    let maxFoto = parseInt(document.getElementById('kertas-max-foto').value) || 5;
+
+    DB.setSoalMatkul(matkulId, {
+        matkulId: matkulId,
+        matkulNama: mk.nama,
+        dosen: mk.dosen,
+        mode: 'kertas',
+        petunjuk: petunjuk,
+        soalText: soalText,
+        durasi: durasi,
+        waktuUjian: waktuUjian,
+        maxFoto: maxFoto,
+        soal: [], // Kosong karena dikerjakan di kertas
+        blocks: [],
+        createdAt: new Date().toISOString()
+    });
+
+    DB.addActivity('Admin buat soal kertas polio: ' + mk.nama);
+    alert('✅ Soal Kertas Polio berhasil disimpan!\n\nMata Kuliah: ' + mk.nama + '\nMode: Kertas Polio (Upload Foto)');
+}
+
+// ===== SAVE GOOGLE FORM =====
+function saveGForm() {
+    let matkulId = currentEditMatkulId;
+    if (!matkulId) { alert('Pilih mata kuliah!'); return; }
+    let gformLink = document.getElementById('gform-link').value.trim();
+    if (!gformLink) { alert('Masukkan link Google Form!'); return; }
+    if (!gformLink.startsWith('http')) { alert('Link harus dimulai dengan http:// atau https://'); return; }
+
+    let mk = DB.getMatkulById(matkulId);
+    let petunjuk = document.getElementById('gform-petunjuk').value.trim();
+    let durasi = parseInt(document.getElementById('gform-durasi').value) || 90;
+    let waktuUjian = document.getElementById('gform-waktu').value;
+
+    DB.setSoalMatkul(matkulId, {
+        matkulId: matkulId,
+        matkulNama: mk.nama,
+        dosen: mk.dosen,
+        mode: 'gform',
+        gformLink: gformLink,
+        petunjuk: petunjuk,
+        durasi: durasi,
+        waktuUjian: waktuUjian,
+        soal: [],
+        blocks: [],
+        createdAt: new Date().toISOString()
+    });
+
+    DB.addActivity('Admin buat soal Google Form: ' + mk.nama);
+    alert('✅ Google Form berhasil disimpan!\n\nMata Kuliah: ' + mk.nama + '\nLink: ' + gformLink);
+}
