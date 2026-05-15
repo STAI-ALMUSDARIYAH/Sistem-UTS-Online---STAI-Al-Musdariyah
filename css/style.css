@@ -2212,855 +2212,9 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
 }
 
 /* ============================================ */
-/* ===== KERTAS POLIO - TAMPILAN PROFESIONAL ==== */
+/* ===== KERTAS POLIO - FINAL CLEAN ===== */
 /* ============================================ */
 
-.kertas-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #f5f7fa, #e8ecf1);
-    z-index: 9999;
-    overflow-y: auto;
-}
-
-.kertas-topbar {
-    position: sticky;
-    top: 0;
-    background: linear-gradient(135deg, #1a5276, #2874a6);
-    color: white;
-    padding: 14px 25px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 10;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
-}
-
-.topbar-title {
-    font-size: 15px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.topbar-close {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 8px 18px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    font-family: 'Poppins', sans-serif;
-    font-size: 13px;
-    transition: background 0.3s;
-}
-
-.topbar-close:hover {
-    background: #e74c3c;
-    border-color: #e74c3c;
-}
-
-.kertas-container {
-    max-width: 850px;
-    margin: 25px auto;
-    padding: 0 20px 50px;
-}
-
-/* COVER */
-.kertas-cover {
-    background: linear-gradient(135deg, #1a5276 0%, #2874a6 100%);
-    color: white;
-    border-radius: 16px;
-    padding: 35px 25px;
-    text-align: center;
-    margin-bottom: 20px;
-    box-shadow: 0 8px 30px rgba(26, 82, 118, 0.3);
-}
-
-.kertas-cover-icon {
-    width: 75px;
-    height: 75px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 15px;
-    font-size: 32px;
-}
-
-.kertas-cover h1 {
-    font-size: 16px;
-    letter-spacing: 2px;
-    opacity: 0.9;
-    margin-bottom: 8px;
-    font-weight: 500;
-}
-
-.kertas-cover h2 {
-    font-size: 22px;
-    margin-bottom: 18px;
-    font-weight: 700;
-}
-
-.kertas-info-pills {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.kertas-info-pills span {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    backdrop-filter: blur(10px);
-}
-
-/* INFO MAHASISWA GRID */
-.kertas-info-mhs {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-    border-left: 5px solid #2e86c1;
-}
-
-.info-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.info-label {
-    font-size: 11px;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: 500;
-}
-
-.info-value {
-    font-size: 14px;
-    color: #1a5276;
-    font-weight: 600;
-}
-
-/* CARDS COMMON */
-.kertas-petunjuk-card,
-.kertas-soal-card,
-.kertas-steps-card,
-.kertas-upload-card {
-    background: white;
-    border-radius: 12px;
-    margin-bottom: 18px;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-}
-
-.card-icon-header {
-    padding: 14px 22px;
-    color: white;
-    font-weight: 600;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.kertas-petunjuk-card .card-icon-header {
-    background: linear-gradient(135deg, #f39c12, #f5b041);
-}
-
-.soal-header {
-    background: linear-gradient(135deg, #1a5276, #2874a6);
-}
-
-.steps-header {
-    background: linear-gradient(135deg, #16a085, #1abc9c);
-}
-
-.upload-header {
-    background: linear-gradient(135deg, #e67e22, #f0b27a);
-}
-
-.card-content {
-    padding: 20px 25px;
-    font-size: 14px;
-    line-height: 1.7;
-    color: #444;
-}
-
-/* SOAL FORMATTING */
-.soal-content {
-    padding: 25px 30px;
-}
-
-.soal-main-item {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 12px;
-    align-items: flex-start;
-    padding: 12px 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border-left: 3px solid #2e86c1;
-}
-
-.soal-main-num {
-    background: #1a5276;
-    color: white;
-    min-width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 14px;
-    flex-shrink: 0;
-}
-
-.soal-main-text {
-    flex: 1;
-    font-size: 14px;
-    line-height: 1.7;
-    color: #2c3e50;
-    font-weight: 500;
-    text-align: justify;
-    padding-top: 5px;
-}
-
-.soal-sub-item {
-    display: flex;
-    gap: 12px;
-    margin-left: 35px;
-    margin-bottom: 8px;
-    padding: 8px 12px;
-    background: #fff;
-    border-left: 2px solid #5dade2;
-    border-radius: 4px;
-}
-
-.soal-sub-num {
-    background: #5dade2;
-    color: white;
-    min-width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 12px;
-    flex-shrink: 0;
-}
-
-.soal-sub-text {
-    flex: 1;
-    font-size: 13.5px;
-    line-height: 1.6;
-    color: #34495e;
-    text-align: justify;
-    padding-top: 3px;
-}
-
-.soal-continuation {
-    margin-left: 47px;
-    font-size: 13.5px;
-    line-height: 1.6;
-    color: #555;
-    margin-bottom: 8px;
-    text-align: justify;
-}
-
-.soal-paragraph {
-    font-size: 14px;
-    line-height: 1.7;
-    color: #444;
-    margin-bottom: 10px;
-    text-align: justify;
-}
-
-.soal-spacer {
-    height: 5px;
-}
-
-/* STEPS */
-.steps-content {
-    padding: 20px 25px;
-}
-
-.step-item {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 12px;
-    align-items: flex-start;
-    padding: 10px;
-    background: #f0fdf9;
-    border-radius: 8px;
-}
-
-.step-num {
-    background: linear-gradient(135deg, #16a085, #1abc9c);
-    color: white;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 14px;
-    flex-shrink: 0;
-}
-
-.step-text {
-    flex: 1;
-    font-size: 13.5px;
-    line-height: 1.6;
-    color: #444;
-    padding-top: 6px;
-}
-
-/* UPLOAD AREA */
-.upload-content {
-    padding: 25px;
-}
-
-.upload-btn {
-    display: block;
-    background: linear-gradient(135deg, #e67e22, #f39c12);
-    color: white;
-    padding: 25px 20px;
-    border-radius: 12px;
-    text-align: center;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s;
-    box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
-}
-
-.upload-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(230, 126, 34, 0.4);
-}
-
-.upload-btn i {
-    font-size: 32px;
-    display: block;
-    margin-bottom: 10px;
-}
-
-.upload-btn span {
-    display: block;
-    font-size: 15px;
-    margin-bottom: 4px;
-}
-
-.upload-btn small {
-    display: block;
-    font-size: 11px;
-    opacity: 0.9;
-}
-
-.upload-progress {
-    background: linear-gradient(135deg, #cfe2ff, #b3d7ff);
-    color: #084298;
-    padding: 12px;
-    border-radius: 8px;
-    margin-top: 15px;
-    text-align: center;
-    font-weight: 500;
-    font-size: 14px;
-}
-
-.foto-counter {
-    background: #f8f9fa;
-    border: 2px dashed #ddd;
-    padding: 10px;
-    border-radius: 8px;
-    text-align: center;
-    margin-top: 15px;
-    font-size: 13px;
-    color: #555;
-    font-weight: 600;
-}
-
-.foto-counter i {
-    color: #e67e22;
-    margin-right: 5px;
-}
-
-#foto-count {
-    color: #1a5276;
-    font-size: 18px;
-}
-
-/* FOTO PREVIEW GRID */
-.foto-preview-grid {
-    margin-top: 15px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 15px;
-    min-height: 60px;
-}
-
-.foto-empty {
-    grid-column: 1/-1;
-    text-align: center;
-    padding: 30px;
-    color: #aaa;
-}
-
-.foto-empty i {
-    font-size: 40px;
-    margin-bottom: 10px;
-    opacity: 0.5;
-}
-
-.foto-empty p {
-    font-size: 12px;
-    font-style: italic;
-}
-
-.foto-card {
-    position: relative;
-    background: white;
-    border: 2px solid #82e0aa;
-    border-radius: 10px;
-    overflow: hidden;
-    transition: transform 0.2s;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.foto-card:hover {
-    transform: scale(1.03);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-}
-
-.foto-card-img {
-    width: 100%;
-    height: 140px;
-    background-size: cover;
-    background-position: center;
-    background-color: #f0f0f0;
-}
-
-.foto-card-footer {
-    background: #1a5276;
-    color: white;
-    padding: 6px 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 11px;
-}
-
-.foto-page {
-    font-weight: 600;
-}
-
-.foto-size {
-    opacity: 0.85;
-    font-size: 10px;
-}
-
-.foto-remove {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    background: #e74c3c;
-    color: white;
-    border: none;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
-    line-height: 1;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-
-.foto-remove:hover {
-    background: #c0392b;
-    transform: scale(1.1);
-}
-
-.foto-zoom {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    background: #3498db;
-    color: white;
-    border: none;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 11px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-
-.foto-zoom:hover {
-    background: #2980b9;
-    transform: scale(1.1);
-}
-
-/* ZOOM OVERLAY */
-.foto-zoom-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.92);
-    z-index: 99999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 30px;
-    cursor: zoom-out;
-}
-
-.foto-zoom-overlay img {
-    max-width: 100%;
-    max-height: 100%;
-    border-radius: 8px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-}
-
-.foto-zoom-close {
-    position: absolute;
-    top: 20px;
-    right: 30px;
-    background: white;
-    color: #333;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 24px;
-    font-weight: bold;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-}
-
-.foto-zoom-close:hover {
-    background: #e74c3c;
-    color: white;
-}
-
-/* ACTION BUTTONS */
-.kertas-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 25px;
-    flex-wrap: wrap;
-}
-
-.btn-kumpulkan {
-    flex: 1;
-    background: linear-gradient(135deg, #27ae60, #16a085);
-    color: white;
-    border: none;
-    padding: 18px 30px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-family: 'Poppins', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    box-shadow: 0 5px 20px rgba(39, 174, 96, 0.3);
-    transition: all 0.3s;
-}
-
-.btn-kumpulkan:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 7px 25px rgba(39, 174, 96, 0.4);
-}
-
-.btn-batal {
-    background: #ecf0f1;
-    color: #555;
-    border: none;
-    padding: 18px 25px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-family: 'Poppins', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.3s;
-}
-
-.btn-batal:hover {
-    background: #e74c3c;
-    color: white;
-}
-
-/* RESPONSIVE */
-@media (max-width: 768px) {
-    .kertas-cover h2 { font-size: 18px; }
-    .kertas-cover h1 { font-size: 14px; }
-    .kertas-info-pills { flex-direction: column; align-items: center; }
-    .kertas-info-mhs { grid-template-columns: 1fr 1fr; }
-    .soal-content, .steps-content, .upload-content { padding: 15px; }
-    .soal-main-item { padding: 10px; }
-    .soal-sub-item { margin-left: 20px; }
-    .soal-continuation { margin-left: 30px; }
-    .topbar-title span { font-size: 12px; }
-    .kertas-actions { flex-direction: column; }
-}
-
-@media (max-width: 480px) {
-    .kertas-info-mhs { grid-template-columns: 1fr; }
-    .foto-preview-grid { grid-template-columns: repeat(2, 1fr); }
-    .upload-btn i { font-size: 26px; }
-    .upload-btn span { font-size: 13px; }
-}
-
-/* ============================================ */
-/* ===== SOAL FORMAT FINAL (FIXED LAYOUT) ===== */
-/* ============================================ */
-
-/* Override styles yang lama agar tidak konflik */
-.kertas-soal-card .card-content {
-    padding: 0 !important;
-}
-
-.kertas-soal-card .soal-content {
-    padding: 25px 30px !important;
-}
-
-/* Hide old styles (override) */
-.soal-main-item,
-.soal-sub-item,
-.soal-continuation,
-.soal-paragraph,
-.soal-spacer {
-    display: none !important;
-}
-
-/* === NEW QUESTION STYLES === */
-.qq-main-block {
-    background: #f8f9fa;
-    border-left: 4px solid #2e86c1;
-    border-radius: 8px;
-    padding: 16px 18px;
-    margin-bottom: 14px;
-    overflow: hidden;
-}
-
-.qq-main-block:last-child {
-    margin-bottom: 0;
-}
-
-.qq-main-row {
-    display: flex;
-    gap: 14px;
-    align-items: flex-start;
-}
-
-.qq-num-circle {
-    background: #1a5276;
-    color: white;
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 13px;
-    flex-shrink: 0;
-}
-
-.qq-main-text {
-    flex: 1;
-    font-size: 14px;
-    line-height: 1.65;
-    color: #2c3e50;
-    font-weight: 500;
-    text-align: justify;
-    padding-top: 4px;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    min-width: 0;
-}
-
-.qq-main-cont {
-    margin-top: 8px;
-    margin-left: 44px;
-    font-size: 13.5px;
-    line-height: 1.65;
-    color: #555;
-    text-align: justify;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-/* SUB ITEMS WRAPPER */
-.qq-sub-wrapper {
-    margin-top: 10px;
-    margin-left: 44px;
-    padding-left: 12px;
-    border-left: 2px dashed #b8d4e8;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.qq-sub-row {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    background: white;
-    border: 1px solid #d6eaf8;
-    border-radius: 6px;
-    padding: 10px 12px;
-}
-
-.qq-sub-circle {
-    background: #5dade2;
-    color: white;
-    width: 24px;
-    height: 24px;
-    min-width: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 11px;
-    flex-shrink: 0;
-    text-transform: lowercase;
-}
-
-.qq-sub-text {
-    flex: 1;
-    font-size: 13px;
-    line-height: 1.6;
-    color: #34495e;
-    text-align: justify;
-    padding-top: 2px;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    min-width: 0;
-}
-
-.qq-paragraph {
-    background: #fff;
-    padding: 10px 14px;
-    margin-bottom: 10px;
-    border-radius: 6px;
-    font-size: 13.5px;
-    line-height: 1.65;
-    color: #444;
-    text-align: justify;
-    border-left: 3px solid #ddd;
-}
-
-/* Container fix - pastikan tidak overflow */
-.kertas-container {
-    max-width: 850px;
-    margin: 25px auto;
-    padding: 0 20px 50px;
-    box-sizing: border-box;
-    width: 100%;
-}
-
-.kertas-soal-card,
-.kertas-petunjuk-card,
-.kertas-steps-card,
-.kertas-upload-card,
-.kertas-info-mhs,
-.kertas-cover {
-    width: 100%;
-    box-sizing: border-box;
-    max-width: 100%;
-}
-
-/* RESPONSIVE FIXES */
-@media (max-width: 768px) {
-    .kertas-soal-card .soal-content {
-        padding: 15px !important;
-    }
-    
-    .qq-main-block {
-        padding: 12px 14px;
-    }
-    
-    .qq-main-text {
-        font-size: 13px;
-    }
-    
-    .qq-num-circle {
-        width: 26px;
-        height: 26px;
-        min-width: 26px;
-        font-size: 12px;
-    }
-    
-    .qq-sub-wrapper {
-        margin-left: 30px;
-        padding-left: 8px;
-    }
-    
-    .qq-sub-row {
-        padding: 8px 10px;
-    }
-    
-    .qq-sub-text {
-        font-size: 12.5px;
-    }
-    
-    .qq-main-cont {
-        margin-left: 30px;
-        font-size: 12.5px;
-    }
-}
-
-@media (max-width: 480px) {
-    .kertas-container {
-        padding: 0 10px 40px;
-    }
-    
-    .qq-main-block {
-        padding: 10px 12px;
-    }
-    
-    .qq-main-row {
-        gap: 10px;
-    }
-    
-    .qq-sub-wrapper {
-        margin-left: 20px;
-    }
-    
-    .qq-main-cont {
-        margin-left: 20px;
-    }
-}
-
-/* ============================================ */
-/* ===== KERTAS POLIO - FINAL CLEAN CSS ===== */
-/* ============================================ */
-
-/* OVERLAY */
 .kp-overlay {
     position: fixed;
     top: 0;
@@ -3072,7 +2226,6 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     overflow-y: auto;
 }
 
-/* TOPBAR */
 .kp-topbar {
     position: sticky;
     top: 0;
@@ -3111,15 +2264,15 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     border-color: #e74c3c;
 }
 
-/* CONTAINER */
 .kp-container {
     max-width: 850px;
     margin: 25px auto;
     padding: 0 20px 50px;
     box-sizing: border-box;
+    position: relative;
+    z-index: 1;
 }
 
-/* COVER */
 .kp-cover {
     background: linear-gradient(135deg, #1a5276, #2874a6);
     color: white;
@@ -3170,7 +2323,6 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     font-size: 12px;
 }
 
-/* INFO MAHASISWA */
 .kp-info {
     background: white;
     border-radius: 10px;
@@ -3203,7 +2355,6 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     font-weight: 600;
 }
 
-/* CARD */
 .kp-card {
     background: white;
     border-radius: 10px;
@@ -3248,9 +2399,7 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     overflow: hidden;
 }
 
-.kp-q-main:last-child {
-    margin-bottom: 0;
-}
+.kp-q-main:last-child { margin-bottom: 0; }
 
 .kp-q-row {
     display: flex;
@@ -3394,23 +2543,32 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     padding-top: 5px;
 }
 
-/* UPLOAD */
+/* UPLOAD - PENTING: Pakai BUTTON bukan LABEL */
 .kp-upload-btn {
     display: block;
+    width: 100%;
     background: linear-gradient(135deg, #e67e22, #f39c12);
     color: white;
     padding: 22px 18px;
+    border: none;
     border-radius: 10px;
     text-align: center;
     cursor: pointer;
     font-weight: 600;
+    font-family: 'Poppins', sans-serif;
     transition: all .3s;
     box-shadow: 0 4px 12px rgba(230,126,34,.3);
+    position: relative;
+    z-index: 5;
 }
 
 .kp-upload-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 18px rgba(230,126,34,.4);
+}
+
+.kp-upload-btn:active {
+    transform: translateY(0);
 }
 
 .kp-upload-btn i {
@@ -3423,12 +2581,14 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     display: block;
     font-size: 14px;
     margin-bottom: 4px;
+    color: white;
 }
 
 .kp-upload-btn small {
     display: block;
     font-size: 11px;
     opacity: .9;
+    color: white;
 }
 
 .kp-progress {
@@ -3464,7 +2624,6 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     font-size: 17px;
 }
 
-/* FOTO GRID */
 .kp-foto-grid {
     margin-top: 14px;
     display: grid;
@@ -3561,7 +2720,6 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     background: #2980b9;
 }
 
-/* ZOOM OVERLAY */
 .kp-zoom-overlay {
     position: fixed;
     top: 0;
@@ -3605,7 +2763,6 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     color: white;
 }
 
-/* ACTIONS */
 .kp-actions {
     display: flex;
     gap: 10px;
@@ -3651,7 +2808,6 @@ textarea, .opsi-isi, .opsi-display, .ujian-opsi-text {
     color: white;
 }
 
-/* RESPONSIVE */
 @media (max-width: 768px) {
     .kp-cover h2 { font-size: 17px; }
     .kp-info { grid-template-columns: 1fr 1fr; }
