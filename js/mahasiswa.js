@@ -138,126 +138,76 @@ function openGForm(matkulId) {
 // ===== KERTAS POLIO - TAMPILAN RAPI =====
 // ========================================
 
-function startUjianKertas(matkulId) {
-    let soal = DB.getSoalMatkul(matkulId);
-    if (!soal) { alert('Soal belum tersedia!'); return; }
-    let mk = DB.getMatkulById(matkulId);
-    let maxFoto = soal.maxFoto || 5;
+// PARSER untuk format soal yang rapi & terstruktur
+function formatSoalKertas(text) {
+    if (!text) return '<p style="color:#999;text-align:center;padding:20px;">Tidak ada soal</p>';
 
-    currentKertasMatkulId = matkulId;
-    kertasFotoData = [];
+    let lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    let html = '';
+    let currentMain = null;
+    let mainBuffer = [];
+    let subBuffer = [];
 
-    // Format soal dengan parser yang lebih rapi
-    let soalFormatted = formatSoalKertas(soal.soalText || '');
+    function flushMain() {
+        if (currentMain === null) return;
+        
+        // Build main item
+        html += '<div class="qq-main-block">';
+        html += '<div class="qq-main-row">';
+        html += '<div class="qq-num-circle">' + currentMain.num + '</div>';
+        html += '<div class="qq-main-text">' + escapeHtml(currentMain.text) + '</div>';
+        html += '</div>';
+        
+        // Continuation paragraphs (text dibawah main yang bukan sub)
+        if (mainBuffer.length > 0) {
+            mainBuffer.forEach(p => {
+                html += '<div class="qq-main-cont">' + escapeHtml(p) + '</div>';
+            });
+        }
+        
+        // Sub items
+        if (subBuffer.length > 0) {
+            html += '<div class="qq-sub-wrapper">';
+            subBuffer.forEach(s => {
+                html += '<div class="qq-sub-row">';
+                html += '<div class="qq-sub-circle">' + s.label + '</div>';
+                html += '<div class="qq-sub-text">' + escapeHtml(s.text) + '</div>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+        
+        html += '</div>';
+        currentMain = null;
+        mainBuffer = [];
+        subBuffer = [];
+    }
 
-    let html = `
-    <div class="kertas-container">
-        <!-- HEADER COVER -->
-        <div class="kertas-cover">
-            <div class="kertas-cover-icon"><i class="fas fa-file-signature"></i></div>
-            <h1>UJIAN TENGAH SEMESTER</h1>
-            <h2>${escapeHtml(mk.nama)}</h2>
-            <div class="kertas-info-pills">
-                <span><i class="fas fa-user-tie"></i> ${escapeHtml(mk.dosen)}</span>
-                <span><i class="fas fa-clock"></i> ${soal.durasi || 90} Menit</span>
-                <span><i class="fas fa-camera"></i> Maks. ${maxFoto} Foto</span>
-            </div>
-        </div>
+    lines.forEach(line => {
+        // Match nomor utama: "1." "2." "1)" "2)"
+        let mainMatch = line.match(/^(\d+)[\.\)]\s*(.+)$/);
+        // Match sub-letter: "a." "b." "a)" "b)"  
+        let subMatch = line.match(/^([a-z])[\.\)]\s*(.+)$/i);
 
-        <!-- INFO MAHASISWA -->
-        <div class="kertas-info-mhs">
-            <div class="info-item">
-                <span class="info-label">Nama</span>
-                <span class="info-value">${escapeHtml(currentMhs.nama)}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">NIM</span>
-                <span class="info-value">${escapeHtml(currentMhs.nim)}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Semester</span>
-                <span class="info-value">${currentMhs.semester} (${currentMhs.kelas || 'RPL'})</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Tanggal</span>
-                <span class="info-value">${formatTodayLong()}</span>
-            </div>
-        </div>
+        if (mainMatch) {
+            flushMain();
+            currentMain = { num: mainMatch[1], text: mainMatch[2] };
+        } else if (subMatch && currentMain !== null) {
+            subBuffer.push({ label: subMatch[1].toLowerCase(), text: subMatch[2] });
+        } else {
+            if (currentMain !== null) {
+                // Continuation of main soal
+                mainBuffer.push(line);
+            } else {
+                // Free paragraph at top
+                html += '<p class="qq-paragraph">' + escapeHtml(line) + '</p>';
+            }
+        }
+    });
 
-        <!-- PETUNJUK -->
-        <div class="kertas-petunjuk-card">
-            <div class="card-icon-header"><i class="fas fa-info-circle"></i> Petunjuk Pengerjaan</div>
-            <div class="card-content">${escapeHtml(soal.petunjuk || '').replace(/\n/g, '<br>')}</div>
-        </div>
-
-        <!-- SOAL -->
-        <div class="kertas-soal-card">
-            <div class="card-icon-header soal-header"><i class="fas fa-file-alt"></i> Soal Ujian</div>
-            <div class="card-content soal-content">${soalFormatted}</div>
-        </div>
-
-        <!-- LANGKAH PENGUMPULAN -->
-        <div class="kertas-steps-card">
-            <div class="card-icon-header steps-header"><i class="fas fa-list-ol"></i> Cara Mengumpulkan Jawaban</div>
-            <div class="steps-content">
-                <div class="step-item">
-                    <div class="step-num">1</div>
-                    <div class="step-text">Tulis <strong>Nama, NIM, dan Mata Kuliah</strong> di bagian atas kertas polio</div>
-                </div>
-                <div class="step-item">
-                    <div class="step-num">2</div>
-                    <div class="step-text">Kerjakan semua soal dengan rapi dan jelas</div>
-                </div>
-                <div class="step-item">
-                    <div class="step-num">3</div>
-                    <div class="step-text">Foto setiap halaman jawaban dengan <strong>terang dan jelas</strong></div>
-                </div>
-                <div class="step-item">
-                    <div class="step-num">4</div>
-                    <div class="step-text">Klik tombol <strong>"Pilih Foto Jawaban"</strong> di bawah dan upload foto (Maks. ${maxFoto} foto)</div>
-                </div>
-                <div class="step-item">
-                    <div class="step-num">5</div>
-                    <div class="step-text">Setelah semua foto terupload, klik <strong>"Kumpulkan Jawaban"</strong></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- UPLOAD AREA -->
-        <div class="kertas-upload-card">
-            <div class="card-icon-header upload-header"><i class="fas fa-cloud-upload-alt"></i> Upload Foto Jawaban</div>
-            <div class="upload-content">
-                <label for="kertas-foto-input" class="upload-btn">
-                    <i class="fas fa-camera"></i>
-                    <span>Klik untuk Pilih / Foto Jawaban</span>
-                    <small>Pilih beberapa foto sekaligus (Maks. ${maxFoto} foto)</small>
-                </label>
-                <input type="file" id="kertas-foto-input" accept="image/*" multiple onchange="handleFotoSelect(this,${maxFoto})" style="display:none;">
-
-                <div id="kertas-progress" class="upload-progress" style="display:none;">
-                    <i class="fas fa-spinner fa-spin"></i> 
-                    <span id="progress-text">Memproses...</span>
-                </div>
-
-                <div class="foto-counter" id="foto-counter">
-                    <i class="fas fa-images"></i> <span id="foto-count">0</span> / ${maxFoto} foto
-                </div>
-
-                <div id="kertas-foto-preview" class="foto-preview-grid"></div>
-            </div>
-        </div>
-
-        <!-- ACTION BUTTONS -->
-        <div class="kertas-actions">
-            <button class="btn-kumpulkan" onclick="submitKertasFinal()">
-                <i class="fas fa-paper-plane"></i> KUMPULKAN JAWABAN
-            </button>
-            <button class="btn-batal" onclick="closeKertasOverlay()">
-                <i class="fas fa-times"></i> Batal
-            </button>
-        </div>
-
-    </div>`;
+    flushMain();
+    return html;
+}
 
     let overlay = document.createElement('div');
     overlay.id = 'kertas-overlay';
