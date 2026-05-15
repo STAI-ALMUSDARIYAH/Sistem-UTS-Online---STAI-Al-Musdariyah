@@ -1,5 +1,6 @@
 // ========================================
 // APP.JS - Main Application Logic
+// LOGIN: Mahasiswa pakai NIM saja, Admin pakai user+password
 // ========================================
 
 // ===== LOGIN PAGE FUNCTIONS =====
@@ -11,39 +12,47 @@ function switchTab(tab) {
     if (tab === 'mahasiswa') {
         document.querySelectorAll('.tab-btn')[0].classList.add('active');
         document.getElementById('form-mahasiswa').classList.add('active');
+        setTimeout(() => {
+            let nimInput = document.getElementById('nim-input');
+            if (nimInput) nimInput.focus();
+        }, 100);
     } else {
         document.querySelectorAll('.tab-btn')[1].classList.add('active');
         document.getElementById('form-admin').classList.add('active');
+        setTimeout(() => {
+            let userInput = document.getElementById('admin-user');
+            if (userInput) userInput.focus();
+        }, 100);
     }
     
     hideMessage();
 }
 
+// LOGIN MAHASISWA - HANYA NIM
 function loginMahasiswa() {
     let nim = document.getElementById('nim-input').value.trim();
-    let password = document.getElementById('password-mhs').value.trim();
     
-    if (!nim || !password) {
-        showMessage('Masukkan NIM dan Password!', 'error');
+    if (!nim) {
+        showMessage('Masukkan NIM Anda!', 'error');
         return;
     }
     
     let mhs = DB.findMahasiswa(nim);
     if (!mhs) {
-        showMessage('NIM tidak ditemukan! Hubungi Admin.', 'error');
-        return;
-    }
-    
-    if (mhs.password !== password) {
-        showMessage('Password salah!', 'error');
+        showMessage('NIM tidak ditemukan! Silakan hubungi Admin.', 'error');
         return;
     }
     
     DB.setSession('mahasiswa', mhs);
     DB.addActivity(`Mahasiswa ${mhs.nama} (${mhs.nim}) login`);
-    window.location.href = 'mahasiswa.html';
+    
+    showMessage('Login berhasil! Mengalihkan...', 'success');
+    setTimeout(() => {
+        window.location.href = 'mahasiswa.html';
+    }, 600);
 }
 
+// LOGIN ADMIN
 function loginAdmin() {
     let username = document.getElementById('admin-user').value.trim();
     let password = document.getElementById('admin-pass').value.trim();
@@ -56,7 +65,10 @@ function loginAdmin() {
     if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
         DB.setSession('admin', { username: 'Admin' });
         DB.addActivity('Admin login ke sistem');
-        window.location.href = 'admin.html';
+        showMessage('Login berhasil! Mengalihkan...', 'success');
+        setTimeout(() => {
+            window.location.href = 'admin.html';
+        }, 600);
     } else {
         showMessage('Username atau Password Admin salah!', 'error');
     }
@@ -91,11 +103,13 @@ function hideMessage() {
 
 // ===== MODAL FUNCTIONS =====
 function openModal(id) {
-    document.getElementById(id).classList.add('active');
+    let modal = document.getElementById(id);
+    if (modal) modal.classList.add('active');
 }
 
 function closeModal(id) {
-    document.getElementById(id).classList.remove('active');
+    let modal = document.getElementById(id);
+    if (modal) modal.classList.remove('active');
 }
 
 // ===== AUTH CHECK =====
@@ -122,9 +136,10 @@ function formatDateTime(isoString) {
 }
 
 function escapeHtml(text) {
-    if (!text) return '';
+    if (text === null || text === undefined) return '';
+    let str = String(text);
     let div = document.createElement('div');
-    div.appendChild(document.createTextNode(text));
+    div.appendChild(document.createTextNode(str));
     return div.innerHTML;
 }
 
