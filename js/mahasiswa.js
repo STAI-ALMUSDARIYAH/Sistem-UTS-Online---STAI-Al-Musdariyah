@@ -1,6 +1,6 @@
 // ========================================
-// MAHASISWA.JS - VERSI FINAL FIXED
-// Upload foto WORKING + Soal rapi
+// MAHASISWA.JS - VERSI CLOUD SYNC
+// STAI Al-Musdariyah - UTS Online System
 // ========================================
 
 let currentMhs = null;
@@ -8,7 +8,7 @@ let kertasFotoData = [];
 let currentKertasMatkulId = null;
 let currentMaxFoto = 5;
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
     let session = checkAuth('mahasiswa');
     if (!session) return;
     currentMhs = session.user;
@@ -19,19 +19,70 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('profile-semester').textContent = currentMhs.semester;
     document.getElementById('profile-kelas').textContent = currentMhs.kelas || 'RPL';
 
+    // PENTING: Force sync dari cloud sebelum load data
+    showLoadingMhs('Memuat data ujian dari server...');
+    await DB.syncFromCloud();
+    hideLoadingMhs();
+
     loadUjianTersedia();
     loadRiwayatUjian();
     loadNilaiSaya();
 });
+
+// ===== LOADING INDICATOR =====
+function showLoadingMhs(msg) {
+    let existing = document.getElementById('mhs-loading');
+    if (existing) existing.remove();
+    let div = document.createElement('div');
+    div.id = 'mhs-loading';
+    div.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    div.innerHTML = '<div style="background:white;padding:25px 40px;border-radius:12px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.3);">' +
+        '<div style="width:40px;height:40px;border:4px solid #f3f3f3;border-top:4px solid #2e86c1;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px;"></div>' +
+        '<p style="margin:0;font-size:13px;color:#333;font-weight:500;">' + msg + '</p>' +
+        '</div>';
+    document.body.appendChild(div);
+}
+
+function hideLoadingMhs() {
+    let el = document.getElementById('mhs-loading');
+    if (el) el.remove();
+}
 
 function showMhsSection(section) {
     document.querySelectorAll('.mhs-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.mhs-tab').forEach(t => t.classList.remove('active'));
     document.getElementById('mhs-' + section).classList.add('active');
     event.target.closest('.mhs-tab').classList.add('active');
-    if (section === 'nilai-saya') loadNilaiSaya();
-    if (section === 'riwayat-ujian') loadRiwayatUjian();
-    if (section === 'ujian-tersedia') loadUjianTersedia();
+
+    // Refresh data dari cloud setiap pindah tab
+    if (section === 'nilai-saya') {
+        refreshNilai();
+    } else if (section === 'riwayat-ujian') {
+        refreshRiwayat();
+    } else if (section === 'ujian-tersedia') {
+        refreshUjian();
+    }
+}
+
+async function refreshUjian() {
+    showLoadingMhs('Memuat ujian terbaru...');
+    await DB.syncFromCloud();
+    hideLoadingMhs();
+    loadUjianTersedia();
+}
+
+async function refreshRiwayat() {
+    showLoadingMhs('Memuat riwayat...');
+    await DB.syncFromCloud();
+    hideLoadingMhs();
+    loadRiwayatUjian();
+}
+
+async function refreshNilai() {
+    showLoadingMhs('Memuat nilai...');
+    await DB.syncFromCloud();
+    hideLoadingMhs();
+    loadNilaiSaya();
 }
 
 // ===== UJIAN TERSEDIA =====
@@ -44,9 +95,16 @@ function loadUjianTersedia() {
     let ujianHtml = '';
     let count = 0;
 
+    console.log('📚 Loading ujian for semester:', semester);
+    console.log('📋 Soal di cloud:', Object.keys(soalAll));
+    console.log('📝 Jawaban mhs:', jawabanMhs.length);
+
     mkData.forEach(mk => {
         let soal = soalAll[mk.id];
-        if (!soal) return;
+        if (!soal) {
+            console.log('⚠️ Belum ada soal untuk:', mk.id, '-', mk.nama);
+            return;
+        }
         let alreadySubmitted = jawabanMhs.find(j => j.matkulId === mk.id);
         let mode = soal.mode || 'online';
         count++;
@@ -94,7 +152,13 @@ function loadUjianTersedia() {
     });
 
     if (count === 0) {
-        container.innerHTML = '<p class="empty-state"><i class="fas fa-info-circle"></i> Tidak ada ujian yang tersedia untuk semester Anda.</p>';
+        container.innerHTML = '<div class="empty-state" style="padding:30px;">' +
+            '<p><i class="fas fa-info-circle" style="font-size:30px;color:#3498db;display:block;margin-bottom:10px;"></i></p>' +
+            '<p>Tidak ada ujian yang tersedia untuk Semester ' + semester + ' saat ini.</p>' +
+            '<p style="font-size:12px;color:#999;margin-top:10px;">Soal akan muncul setelah Admin/Dosen menambahkan.</p>' +
+            '<button class="btn-secondary" style="margin-top:15px;" onclick="refreshUjian()">' +
+            '<i class="fas fa-sync"></i> Refresh Data</button>' +
+            '</div>';
     } else {
         container.innerHTML = ujianHtml;
     }
@@ -116,27 +180,32 @@ function startUjian(matkulId) {
 }
 
 // ===== GOOGLE FORM =====
-function openGForm(matkulId) {
+async function openGForm(matkulId) {
     let soal = DB.getSoalMatkul(matkulId);
     if (!soal || !soal.gformLink) { alert('Link Google Form belum tersedia!'); return; }
     let mk = DB.getMatkulById(matkulId);
     if (!confirm('Anda akan membuka Google Form:\n\n' + mk.nama + '\n\n' +
         (soal.petunjuk || 'Jawab semua pertanyaan lalu klik Submit.') + '\n\nLanjutkan?')) return;
+
     let jawaban = {
         nim: currentMhs.nim, namaMhs: currentMhs.nama, semester: currentMhs.semester,
         matkulId: matkulId, matkulNama: mk.nama, mode: 'gform',
         jawaban: [{ no: 1, tipe: 'gform', pertanyaan: 'Dikerjakan via Google Form', jawaban: 'Link: ' + soal.gformLink, bobot: 100 }],
         startedAt: new Date().toISOString(), submittedAt: new Date().toISOString()
     };
-    DB.addJawaban(jawaban);
+
+    showLoadingMhs('Menyimpan data...');
+    await DB.addJawaban(jawaban);
+    hideLoadingMhs();
+
     DB.addActivity(currentMhs.nama + ' membuka Google Form: ' + mk.nama);
     window.open(soal.gformLink, '_blank');
     loadUjianTersedia();
-    alert('✅ Google Form telah dibuka di tab baru.');
+    alert('✅ Google Form telah dibuka di tab baru.\n\nKerjakan dan klik Submit di Google Form tersebut.');
 }
 
 // ========================================
-// ===== KERTAS POLIO - VERSI FIXED =====
+// ===== KERTAS POLIO =====
 // ========================================
 
 function startUjianKertas(matkulId) {
@@ -232,7 +301,6 @@ function startUjianKertas(matkulId) {
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
 
-    // PENTING: Bind event listener setelah overlay dimasukkan ke DOM
     setTimeout(function () {
         let fileInput = document.getElementById('kertas-foto-input');
         if (fileInput) {
@@ -244,23 +312,20 @@ function startUjianKertas(matkulId) {
     }, 100);
 }
 
-// Trigger file input via button click
 function triggerFileInput() {
     let fileInput = document.getElementById('kertas-foto-input');
     if (fileInput) {
-        fileInput.value = ''; // Reset dulu
+        fileInput.value = '';
         fileInput.click();
     } else {
         alert('❌ Input file tidak ditemukan!');
     }
 }
 
-// PARSER soal yang rapi
 function formatSoalKertas(text) {
     if (!text || !text.trim()) {
         return '<p style="color:#999;text-align:center;padding:20px;font-style:italic;">Tidak ada soal tersedia</p>';
     }
-
     let lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     let html = '';
     let currentMain = null;
@@ -269,19 +334,14 @@ function formatSoalKertas(text) {
 
     function flush() {
         if (currentMain === null) return;
-
-        html += '<div class="kp-q-main">';
-        html += '<div class="kp-q-row">';
+        html += '<div class="kp-q-main"><div class="kp-q-row">';
         html += '<div class="kp-q-num">' + currentMain.num + '</div>';
-        html += '<div class="kp-q-text">' + escapeHtml(currentMain.text) + '</div>';
-        html += '</div>';
-
+        html += '<div class="kp-q-text">' + escapeHtml(currentMain.text) + '</div></div>';
         if (mainCont.length > 0) {
             mainCont.forEach(p => {
                 html += '<div class="kp-q-cont">' + escapeHtml(p) + '</div>';
             });
         }
-
         if (subItems.length > 0) {
             html += '<div class="kp-q-subs">';
             subItems.forEach(s => {
@@ -292,31 +352,23 @@ function formatSoalKertas(text) {
             });
             html += '</div>';
         }
-
         html += '</div>';
-        currentMain = null;
-        mainCont = [];
-        subItems = [];
+        currentMain = null; mainCont = []; subItems = [];
     }
 
     lines.forEach(line => {
         let mainMatch = line.match(/^(\d+)[\.\)]\s*(.+)$/);
         let subMatch = line.match(/^([a-z])[\.\)]\s*(.+)$/i);
-
         if (mainMatch) {
             flush();
             currentMain = { num: mainMatch[1], text: mainMatch[2] };
         } else if (subMatch && currentMain !== null) {
             subItems.push({ label: subMatch[1].toLowerCase(), text: subMatch[2] });
         } else {
-            if (currentMain !== null) {
-                mainCont.push(line);
-            } else {
-                html += '<p class="kp-q-paragraph">' + escapeHtml(line) + '</p>';
-            }
+            if (currentMain !== null) mainCont.push(line);
+            else html += '<p class="kp-q-paragraph">' + escapeHtml(line) + '</p>';
         }
     });
-
     flush();
     return html;
 }
@@ -338,40 +390,23 @@ function closeKertasOverlay() {
     currentKertasMatkulId = null;
 }
 
-// HANDLE FILE SELECT - dipanggil dari event listener
 function handleFotoSelect(input) {
     let files = input.files;
-    if (!files || files.length === 0) {
-        console.log('No files selected');
-        return;
-    }
-
-    console.log('Selected files:', files.length);
-
+    if (!files || files.length === 0) return;
     if (kertasFotoData.length + files.length > currentMaxFoto) {
         alert('⚠️ Maksimal ' + currentMaxFoto + ' foto!\nSudah upload ' + kertasFotoData.length + ' foto.');
         input.value = '';
         return;
     }
-
     let progressDiv = document.getElementById('kertas-progress');
     let progressText = document.getElementById('progress-text');
     if (progressDiv) progressDiv.style.display = 'block';
-
     let totalFiles = files.length;
-    let processedFiles = 0;
     let promises = [];
-
     Array.from(files).forEach((file, i) => {
         let p = new Promise((resolve) => {
-            if (!file.type.startsWith('image/')) {
-                console.warn('Skip non-image:', file.name);
-                resolve();
-                return;
-            }
-
+            if (!file.type.startsWith('image/')) { resolve(); return; }
             if (progressText) progressText.textContent = 'Memproses ' + (i + 1) + '/' + totalFiles + '...';
-
             compressImage(file, function (compressedDataUrl, sizeKB) {
                 kertasFotoData.push({
                     no: kertasFotoData.length + 1,
@@ -379,22 +414,15 @@ function handleFotoSelect(input) {
                     ukuranKompres: sizeKB + ' KB',
                     dataUrl: compressedDataUrl
                 });
-                processedFiles++;
-                console.log('Processed:', file.name, sizeKB + ' KB');
                 resolve();
-            }, function (err) {
-                console.error('Compress error:', err);
-                resolve();
-            });
+            }, function (err) { console.error(err); resolve(); });
         });
         promises.push(p);
     });
-
     Promise.all(promises).then(() => {
         if (progressDiv) progressDiv.style.display = 'none';
         renderFotoPreview();
         input.value = '';
-        console.log('All photos processed. Total:', kertasFotoData.length);
     });
 }
 
@@ -413,8 +441,7 @@ function compressImage(file, callback, errorCallback) {
                 } else {
                     if (height > maxDim) { width = Math.round((width * maxDim) / height); height = maxDim; }
                 }
-                canvas.width = width;
-                canvas.height = height;
+                canvas.width = width; canvas.height = height;
                 ctx.drawImage(img, 0, 0, width, height);
                 let dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                 let sizeKB = (dataUrl.length * 0.75 / 1024).toFixed(1);
@@ -433,7 +460,6 @@ function renderFotoPreview() {
     let counter = document.getElementById('foto-count');
     if (counter) counter.textContent = kertasFotoData.length;
     if (!preview) return;
-
     if (kertasFotoData.length === 0) {
         preview.innerHTML = '<div class="kp-foto-empty"><i class="fas fa-images"></i><p>Belum ada foto diupload</p></div>';
         return;
@@ -466,7 +492,7 @@ function removeFoto(idx) {
     renderFotoPreview();
 }
 
-function submitKertasFinal() {
+async function submitKertasFinal() {
     if (kertasFotoData.length === 0) { alert('⚠️ Upload minimal 1 foto jawaban terlebih dahulu!'); return; }
     if (!currentKertasMatkulId) { alert('❌ Error: Mata kuliah tidak terdeteksi.'); return; }
     if (!confirm('📤 Kumpulkan ' + kertasFotoData.length + ' foto jawaban?\n\n⚠️ Setelah dikumpulkan TIDAK BISA DIUBAH lagi.\n\nLanjutkan?')) return;
@@ -474,7 +500,7 @@ function submitKertasFinal() {
     let progressDiv = document.getElementById('kertas-progress');
     let progressText = document.getElementById('progress-text');
     if (progressDiv) progressDiv.style.display = 'block';
-    if (progressText) progressText.textContent = 'Mengumpulkan jawaban...';
+    if (progressText) progressText.textContent = 'Mengumpulkan jawaban ke server...';
 
     let mk = DB.getMatkulById(currentKertasMatkulId);
     let jawaban = {
@@ -490,7 +516,7 @@ function submitKertasFinal() {
     };
 
     try {
-        let result = DB.addJawaban(jawaban);
+        let result = await DB.addJawaban(jawaban);
         if (!result) {
             if (progressDiv) progressDiv.style.display = 'none';
             alert('❌ Anda sudah pernah mengumpulkan jawaban untuk mata kuliah ini!');
@@ -504,11 +530,11 @@ function submitKertasFinal() {
         currentKertasMatkulId = null;
         loadUjianTersedia();
         loadRiwayatUjian();
-        alert('✅ Jawaban berhasil dikumpulkan!\n\n' + jawaban.jawaban.length + ' foto telah diupload.');
+        alert('✅ Jawaban berhasil dikumpulkan!\n\n' + jawaban.jawaban.length + ' foto telah diupload ke server.');
     } catch (err) {
         if (progressDiv) progressDiv.style.display = 'none';
         if (err.name === 'QuotaExceededError' || err.message.indexOf('quota') !== -1) {
-            alert('❌ GAGAL: Penyimpanan browser penuh!\n\nKurangi jumlah foto.');
+            alert('❌ GAGAL: Penyimpanan penuh!\n\nKurangi jumlah foto.');
         } else {
             alert('❌ Gagal: ' + err.message);
         }
@@ -519,10 +545,13 @@ function submitKertasFinal() {
 function loadRiwayatUjian() {
     let jawaban = DB.getJawabanByNim(currentMhs.nim);
     let tbody = document.getElementById('tbody-riwayat');
-    if (jawaban.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Belum ada riwayat</td></tr>'; return; }
+    if (jawaban.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Belum ada riwayat ujian</td></tr>';
+        return;
+    }
     tbody.innerHTML = jawaban.map((j, i) => {
         let mk = DB.getMatkulById(j.matkulId);
-        let nilai = DB.getNilai().find(n => n.nim === j.nim && n.matkulId === j.matkulId);
+        let nilai = DB.getNilai().find(n => String(n.nim) === String(j.nim) && n.matkulId === j.matkulId);
         let modeLabel = '';
         if (j.mode === 'kertas') modeLabel = '<span class="ujian-mode-badge mode-kertas">📝 Kertas</span>';
         else if (j.mode === 'gform') modeLabel = '<span class="ujian-mode-badge mode-gform">📋 GForm</span>';
@@ -577,4 +606,12 @@ function loadNilaiSaya() {
             '<i class="fab fa-whatsapp"></i> ' + r.noHp + '</a></p></div>'
         ).join('');
     } else { remedialBox.style.display = 'none'; }
+}
+
+// CSS animation for spinner (inject sekali aja)
+if (!document.getElementById('mhs-spinner-css')) {
+    let style = document.createElement('style');
+    style.id = 'mhs-spinner-css';
+    style.textContent = '@keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }';
+    document.head.appendChild(style);
 }
