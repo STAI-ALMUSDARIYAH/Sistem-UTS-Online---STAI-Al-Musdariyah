@@ -30,20 +30,22 @@
             </button>
         </div>
 
+        <!-- LOGIN MAHASISWA - HANYA NIM -->
         <div id="form-mahasiswa" class="login-form active">
             <div class="form-group">
-                <label><i class="fas fa-id-card"></i> NIM</label>
-                <input type="text" id="nim-input" placeholder="Masukkan NIM Anda" autocomplete="off">
+                <label><i class="fas fa-id-card"></i> NIM Mahasiswa</label>
+                <input type="text" id="nim-input" placeholder="Masukkan NIM Anda" autocomplete="off" autofocus>
             </div>
-            <div class="form-group">
-                <label><i class="fas fa-lock"></i> Password</label>
-                <input type="password" id="password-mhs" placeholder="Masukkan Password" autocomplete="off">
+            <div class="login-info">
+                <i class="fas fa-info-circle"></i> 
+                <span>Mahasiswa cukup login dengan NIM yang telah terdaftar</span>
             </div>
             <button class="btn-login" onclick="loginMahasiswa()">
                 <i class="fas fa-sign-in-alt"></i> Masuk
             </button>
         </div>
 
+        <!-- LOGIN ADMIN - DENGAN PASSWORD -->
         <div id="form-admin" class="login-form">
             <div class="form-group">
                 <label><i class="fas fa-user"></i> Username</label>
