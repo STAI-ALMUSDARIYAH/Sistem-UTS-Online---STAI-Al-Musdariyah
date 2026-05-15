@@ -1,11 +1,12 @@
 // ========================================
-// MAHASISWA.JS - VERSI FINAL CLEAN
-// Support: Online + Kertas Polio + Google Form
+// MAHASISWA.JS - VERSI FINAL FIXED
+// Upload foto WORKING + Soal rapi
 // ========================================
 
 let currentMhs = null;
 let kertasFotoData = [];
 let currentKertasMatkulId = null;
+let currentMaxFoto = 5;
 
 document.addEventListener('DOMContentLoaded', function () {
     let session = checkAuth('mahasiswa');
@@ -135,7 +136,7 @@ function openGForm(matkulId) {
 }
 
 // ========================================
-// ===== KERTAS POLIO - VERSI FINAL =====
+// ===== KERTAS POLIO - VERSI FIXED =====
 // ========================================
 
 function startUjianKertas(matkulId) {
@@ -145,13 +146,13 @@ function startUjianKertas(matkulId) {
     let maxFoto = soal.maxFoto || 5;
 
     currentKertasMatkulId = matkulId;
+    currentMaxFoto = maxFoto;
     kertasFotoData = [];
 
     let soalFormatted = formatSoalKertas(soal.soalText || '');
 
-    let containerHtml = '<div class="kp-container">' +
+    let html = '<div class="kp-container">' +
 
-        // COVER
         '<div class="kp-cover">' +
         '<div class="kp-cover-icon"><i class="fas fa-file-signature"></i></div>' +
         '<h1>UJIAN TENGAH SEMESTER</h1>' +
@@ -162,7 +163,6 @@ function startUjianKertas(matkulId) {
         '<span><i class="fas fa-camera"></i> Maks. ' + maxFoto + ' Foto</span>' +
         '</div></div>' +
 
-        // INFO MAHASISWA
         '<div class="kp-info">' +
         '<div class="kp-info-item"><span class="kp-info-label">Nama</span><span class="kp-info-value">' + escapeHtml(currentMhs.nama) + '</span></div>' +
         '<div class="kp-info-item"><span class="kp-info-label">NIM</span><span class="kp-info-value">' + escapeHtml(currentMhs.nim) + '</span></div>' +
@@ -170,48 +170,51 @@ function startUjianKertas(matkulId) {
         '<div class="kp-info-item"><span class="kp-info-label">Tanggal</span><span class="kp-info-value">' + formatTodayLong() + '</span></div>' +
         '</div>' +
 
-        // PETUNJUK
-        '<div class="kp-card kp-card-petunjuk">' +
+        '<div class="kp-card">' +
         '<div class="kp-card-head kp-head-orange"><i class="fas fa-info-circle"></i> Petunjuk Pengerjaan</div>' +
         '<div class="kp-card-body">' + escapeHtml(soal.petunjuk || '').replace(/\n/g, '<br>') + '</div>' +
         '</div>' +
 
-        // SOAL
-        '<div class="kp-card kp-card-soal">' +
+        '<div class="kp-card">' +
         '<div class="kp-card-head kp-head-blue"><i class="fas fa-file-alt"></i> Soal Ujian</div>' +
         '<div class="kp-card-body kp-soal-body">' + soalFormatted + '</div>' +
         '</div>' +
 
-        // STEPS
         '<div class="kp-card">' +
-        '<div class="kp-card-head kp-head-green"><i class="fas fa-list-ol"></i> Cara Mengumpulkan Jawaban</div>' +
+        '<div class="kp-card-head kp-head-green"><i class="fas fa-list-ol"></i> Cara Mengumpulkan</div>' +
         '<div class="kp-card-body">' +
-        '<div class="kp-step"><div class="kp-step-num">1</div><div class="kp-step-text">Tulis <b>Nama, NIM, dan Mata Kuliah</b> di bagian atas kertas polio</div></div>' +
-        '<div class="kp-step"><div class="kp-step-num">2</div><div class="kp-step-text">Kerjakan semua soal dengan rapi dan jelas</div></div>' +
-        '<div class="kp-step"><div class="kp-step-num">3</div><div class="kp-step-text">Foto setiap halaman jawaban dengan <b>terang dan jelas</b></div></div>' +
-        '<div class="kp-step"><div class="kp-step-num">4</div><div class="kp-step-text">Klik tombol <b>"Pilih Foto Jawaban"</b> di bawah (Maks. ' + maxFoto + ' foto)</div></div>' +
-        '<div class="kp-step"><div class="kp-step-num">5</div><div class="kp-step-text">Setelah semua foto terupload, klik <b>"Kumpulkan Jawaban"</b></div></div>' +
+        '<div class="kp-step"><div class="kp-step-num">1</div><div class="kp-step-text">Tulis <b>Nama, NIM, dan Mata Kuliah</b> di kertas polio</div></div>' +
+        '<div class="kp-step"><div class="kp-step-num">2</div><div class="kp-step-text">Kerjakan semua soal dengan rapi</div></div>' +
+        '<div class="kp-step"><div class="kp-step-num">3</div><div class="kp-step-text">Foto setiap halaman dengan terang</div></div>' +
+        '<div class="kp-step"><div class="kp-step-num">4</div><div class="kp-step-text">Klik tombol upload (maks. ' + maxFoto + ' foto)</div></div>' +
+        '<div class="kp-step"><div class="kp-step-num">5</div><div class="kp-step-text">Klik <b>"Kumpulkan Jawaban"</b></div></div>' +
         '</div></div>' +
 
-        // UPLOAD
         '<div class="kp-card">' +
         '<div class="kp-card-head kp-head-orange-dark"><i class="fas fa-cloud-upload-alt"></i> Upload Foto Jawaban</div>' +
         '<div class="kp-card-body">' +
-        '<label for="kertas-foto-input" class="kp-upload-btn">' +
+
+        '<button type="button" class="kp-upload-btn" onclick="triggerFileInput()">' +
         '<i class="fas fa-camera"></i>' +
         '<span>Klik untuk Pilih / Foto Jawaban</span>' +
         '<small>Pilih beberapa foto sekaligus (Maks. ' + maxFoto + ' foto)</small>' +
-        '</label>' +
-        '<input type="file" id="kertas-foto-input" accept="image/*" multiple onchange="handleFotoSelect(this,' + maxFoto + ')" style="display:none;">' +
-        '<div id="kertas-progress" class="kp-progress" style="display:none;"><i class="fas fa-spinner fa-spin"></i> <span id="progress-text">Memproses...</span></div>' +
-        '<div class="kp-counter"><i class="fas fa-images"></i> <span id="foto-count">0</span> / ' + maxFoto + ' foto</div>' +
+        '</button>' +
+
+        '<input type="file" id="kertas-foto-input" accept="image/*" multiple style="display:none;">' +
+
+        '<div id="kertas-progress" class="kp-progress" style="display:none;">' +
+        '<i class="fas fa-spinner fa-spin"></i> <span id="progress-text">Memproses...</span>' +
+        '</div>' +
+
+        '<div class="kp-counter"><i class="fas fa-images"></i> Foto terupload: <span id="foto-count">0</span> / ' + maxFoto + '</div>' +
+
         '<div id="kertas-foto-preview" class="kp-foto-grid"></div>' +
+
         '</div></div>' +
 
-        // ACTIONS
         '<div class="kp-actions">' +
-        '<button class="kp-btn-submit" onclick="submitKertasFinal()"><i class="fas fa-paper-plane"></i> KUMPULKAN JAWABAN</button>' +
-        '<button class="kp-btn-cancel" onclick="closeKertasOverlay()"><i class="fas fa-times"></i> Batal</button>' +
+        '<button type="button" class="kp-btn-submit" onclick="submitKertasFinal()"><i class="fas fa-paper-plane"></i> KUMPULKAN JAWABAN</button>' +
+        '<button type="button" class="kp-btn-cancel" onclick="closeKertasOverlay()"><i class="fas fa-times"></i> Batal</button>' +
         '</div>' +
 
         '</div>';
@@ -222,16 +225,37 @@ function startUjianKertas(matkulId) {
     overlay.innerHTML =
         '<div class="kp-topbar">' +
         '<div class="kp-topbar-title"><i class="fas fa-file-signature"></i> <span>Ujian: ' + escapeHtml(mk.nama) + '</span></div>' +
-        '<button onclick="closeKertasOverlay()" class="kp-topbar-close"><i class="fas fa-times"></i> Tutup</button>' +
+        '<button type="button" onclick="closeKertasOverlay()" class="kp-topbar-close"><i class="fas fa-times"></i> Tutup</button>' +
         '</div>' +
-        containerHtml;
+        html;
 
     document.body.appendChild(overlay);
     document.body.style.overflow = 'hidden';
-    renderFotoPreview();
+
+    // PENTING: Bind event listener setelah overlay dimasukkan ke DOM
+    setTimeout(function () {
+        let fileInput = document.getElementById('kertas-foto-input');
+        if (fileInput) {
+            fileInput.addEventListener('change', function (e) {
+                handleFotoSelect(e.target);
+            });
+        }
+        renderFotoPreview();
+    }, 100);
 }
 
-// PARSER soal yang rapi & terstruktur
+// Trigger file input via button click
+function triggerFileInput() {
+    let fileInput = document.getElementById('kertas-foto-input');
+    if (fileInput) {
+        fileInput.value = ''; // Reset dulu
+        fileInput.click();
+    } else {
+        alert('❌ Input file tidak ditemukan!');
+    }
+}
+
+// PARSER soal yang rapi
 function formatSoalKertas(text) {
     if (!text || !text.trim()) {
         return '<p style="color:#999;text-align:center;padding:20px;font-style:italic;">Tidak ada soal tersedia</p>';
@@ -314,25 +338,40 @@ function closeKertasOverlay() {
     currentKertasMatkulId = null;
 }
 
-function handleFotoSelect(input, maxFoto) {
+// HANDLE FILE SELECT - dipanggil dari event listener
+function handleFotoSelect(input) {
     let files = input.files;
-    if (!files || files.length === 0) return;
-    if (kertasFotoData.length + files.length > maxFoto) {
-        alert('⚠️ Maksimal ' + maxFoto + ' foto!\nSudah upload ' + kertasFotoData.length + ' foto.');
+    if (!files || files.length === 0) {
+        console.log('No files selected');
+        return;
+    }
+
+    console.log('Selected files:', files.length);
+
+    if (kertasFotoData.length + files.length > currentMaxFoto) {
+        alert('⚠️ Maksimal ' + currentMaxFoto + ' foto!\nSudah upload ' + kertasFotoData.length + ' foto.');
         input.value = '';
         return;
     }
+
     let progressDiv = document.getElementById('kertas-progress');
     let progressText = document.getElementById('progress-text');
-    progressDiv.style.display = 'block';
+    if (progressDiv) progressDiv.style.display = 'block';
+
     let totalFiles = files.length;
     let processedFiles = 0;
     let promises = [];
 
     Array.from(files).forEach((file, i) => {
         let p = new Promise((resolve) => {
-            if (!file.type.startsWith('image/')) { resolve(); return; }
-            progressText.textContent = 'Memproses ' + (i + 1) + '/' + totalFiles + '...';
+            if (!file.type.startsWith('image/')) {
+                console.warn('Skip non-image:', file.name);
+                resolve();
+                return;
+            }
+
+            if (progressText) progressText.textContent = 'Memproses ' + (i + 1) + '/' + totalFiles + '...';
+
             compressImage(file, function (compressedDataUrl, sizeKB) {
                 kertasFotoData.push({
                     no: kertasFotoData.length + 1,
@@ -341,16 +380,21 @@ function handleFotoSelect(input, maxFoto) {
                     dataUrl: compressedDataUrl
                 });
                 processedFiles++;
+                console.log('Processed:', file.name, sizeKB + ' KB');
                 resolve();
-            }, function (err) { console.error(err); resolve(); });
+            }, function (err) {
+                console.error('Compress error:', err);
+                resolve();
+            });
         });
         promises.push(p);
     });
 
     Promise.all(promises).then(() => {
-        progressDiv.style.display = 'none';
+        if (progressDiv) progressDiv.style.display = 'none';
         renderFotoPreview();
         input.value = '';
+        console.log('All photos processed. Total:', kertasFotoData.length);
     });
 }
 
@@ -398,8 +442,8 @@ function renderFotoPreview() {
         '<div class="kp-foto-card">' +
         '<div class="kp-foto-img" style="background-image:url(' + f.dataUrl + ');"></div>' +
         '<div class="kp-foto-foot"><span>Hal. ' + (i + 1) + '</span><span>' + f.ukuranKompres + '</span></div>' +
-        '<button class="kp-foto-remove" onclick="removeFoto(' + i + ')" title="Hapus">×</button>' +
-        '<button class="kp-foto-zoom" onclick="zoomFoto(' + i + ')" title="Lihat"><i class="fas fa-search-plus"></i></button>' +
+        '<button type="button" class="kp-foto-remove" onclick="removeFoto(' + i + ')" title="Hapus">×</button>' +
+        '<button type="button" class="kp-foto-zoom" onclick="zoomFoto(' + i + ')" title="Lihat"><i class="fas fa-search-plus"></i></button>' +
         '</div>'
     ).join('');
 }
@@ -423,14 +467,14 @@ function removeFoto(idx) {
 }
 
 function submitKertasFinal() {
-    if (kertasFotoData.length === 0) { alert('⚠️ Upload minimal 1 foto jawaban!'); return; }
+    if (kertasFotoData.length === 0) { alert('⚠️ Upload minimal 1 foto jawaban terlebih dahulu!'); return; }
     if (!currentKertasMatkulId) { alert('❌ Error: Mata kuliah tidak terdeteksi.'); return; }
     if (!confirm('📤 Kumpulkan ' + kertasFotoData.length + ' foto jawaban?\n\n⚠️ Setelah dikumpulkan TIDAK BISA DIUBAH lagi.\n\nLanjutkan?')) return;
 
     let progressDiv = document.getElementById('kertas-progress');
     let progressText = document.getElementById('progress-text');
-    progressDiv.style.display = 'block';
-    progressText.textContent = 'Mengumpulkan jawaban...';
+    if (progressDiv) progressDiv.style.display = 'block';
+    if (progressText) progressText.textContent = 'Mengumpulkan jawaban...';
 
     let mk = DB.getMatkulById(currentKertasMatkulId);
     let jawaban = {
@@ -448,7 +492,7 @@ function submitKertasFinal() {
     try {
         let result = DB.addJawaban(jawaban);
         if (!result) {
-            progressDiv.style.display = 'none';
+            if (progressDiv) progressDiv.style.display = 'none';
             alert('❌ Anda sudah pernah mengumpulkan jawaban untuk mata kuliah ini!');
             return;
         }
@@ -462,7 +506,7 @@ function submitKertasFinal() {
         loadRiwayatUjian();
         alert('✅ Jawaban berhasil dikumpulkan!\n\n' + jawaban.jawaban.length + ' foto telah diupload.');
     } catch (err) {
-        progressDiv.style.display = 'none';
+        if (progressDiv) progressDiv.style.display = 'none';
         if (err.name === 'QuotaExceededError' || err.message.indexOf('quota') !== -1) {
             alert('❌ GAGAL: Penyimpanan browser penuh!\n\nKurangi jumlah foto.');
         } else {
