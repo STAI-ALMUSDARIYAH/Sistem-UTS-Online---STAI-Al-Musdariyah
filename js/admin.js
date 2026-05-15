@@ -1613,3 +1613,134 @@ function saveGForm() {
     DB.addActivity('Admin buat soal Google Form: ' + mk.nama);
     alert('✅ Google Form berhasil disimpan!\n\nMata Kuliah: ' + mk.nama + '\nLink: ' + gformLink);
 }
+
+// ========================================
+// ===== VIEW JAWABAN UNTUK FOTO/GFORM =====
+// ========================================
+
+// Override generateJawabanHTML agar support foto kertas dan google form
+let _originalGenerateJawabanHTML = generateJawabanHTML;
+
+generateJawabanHTML = function (jaw, mk, nilai) {
+    // Jika mode kertas, render khusus
+    if (jaw.mode === 'kertas') {
+        return generateJawabanKertasHTML(jaw, mk, nilai);
+    }
+    // Jika mode gform
+    if (jaw.mode === 'gform') {
+        return generateJawabanGFormHTML(jaw, mk, nilai);
+    }
+    // Default: pakai render lama
+    return _originalGenerateJawabanHTML(jaw, mk, nilai);
+};
+
+function generateJawabanKertasHTML(jaw, mk, nilai) {
+    let html = '<div class="lembar-jawaban" id="lembar-pdf-content">' +
+        '<div class="lj-header">' +
+        '<div class="lj-logo-area"><i class="fas fa-mosque" style="font-size:50px;color:#1a5276;"></i></div>' +
+        '<div class="lj-header-text">' +
+        '<h2>SEKOLAH TINGGI AGAMA ISLAM AL-MUSDARIYAH</h2>' +
+        '<h3>JURUSAN SYARIAH</h3>' +
+        '<h3>PROGRAM STUDI HUKUM EKONOMI SYARIAH</h3>' +
+        '<p>Jl. K.H. Usman Dhomiri No. 156, Cimahi - Jawa Barat</p>' +
+        '</div></div>' +
+        '<div class="lj-divider"></div>' +
+        '<div class="lj-title"><h2>LEMBAR JAWABAN UTS - KERTAS POLIO (UPLOAD FOTO)</h2><p>Tahun Akademik 2025 / 2026</p></div>' +
+        '<table class="lj-info-table">' +
+        '<tr><td class="lj-label">Nama</td><td class="lj-colon">:</td><td class="lj-value"><strong>' + escapeHtml(jaw.namaMhs) + '</strong></td>' +
+        '<td class="lj-label">Mata Kuliah</td><td class="lj-colon">:</td><td class="lj-value">' + escapeHtml(mk ? mk.nama : jaw.matkulNama) + '</td></tr>' +
+        '<tr><td class="lj-label">NIM</td><td class="lj-colon">:</td><td class="lj-value"><strong>' + escapeHtml(jaw.nim) + '</strong></td>' +
+        '<td class="lj-label">Dosen</td><td class="lj-colon">:</td><td class="lj-value">' + escapeHtml(mk ? mk.dosen : '-') + '</td></tr>' +
+        '<tr><td class="lj-label">Semester</td><td class="lj-colon">:</td><td class="lj-value">' + jaw.semester + '</td>' +
+        '<td class="lj-label">Tanggal</td><td class="lj-colon">:</td><td class="lj-value">' + formatDateLong(jaw.submittedAt) + '</td></tr>' +
+        '<tr><td class="lj-label">Mode</td><td class="lj-colon">:</td><td class="lj-value"><strong>📝 Kertas Polio (Upload Foto)</strong></td>' +
+        '<td class="lj-label">Total Foto</td><td class="lj-colon">:</td><td class="lj-value">' + jaw.jawaban.length + ' halaman</td></tr>' +
+        '</table>' +
+        '<div class="lj-instruksi"><strong>Catatan:</strong> Mahasiswa mengerjakan ujian di kertas polio dan mengupload hasil dalam bentuk foto. Berikut foto-foto jawaban yang diupload:</div>' +
+        '<div class="lj-content-area">';
+
+    jaw.jawaban.forEach((j, i) => {
+        html += '<div class="lj-soal-block" style="page-break-inside:avoid;">' +
+            '<div class="lj-soal-header">' +
+            '<span class="lj-soal-no">📷 ' + escapeHtml(j.pertanyaan) + '</span>' +
+            '<span class="lj-soal-bobot">' + escapeHtml(j.jawaban) + '</span>' +
+            '</div>' +
+            '<div style="text-align:center;padding:10px;background:white;border:1px solid #ddd;border-radius:4px;">';
+
+        if (j.fotoData) {
+            html += '<img src="' + j.fotoData + '" style="max-width:100%;max-height:600px;border:1px solid #ccc;border-radius:4px;" alt="Foto jawaban ' + (i + 1) + '">';
+        } else {
+            html += '<p style="color:#999;padding:30px;">Foto tidak tersedia</p>';
+        }
+        html += '</div></div>';
+    });
+
+    html += '</div>' +
+        '<div class="lj-nilai-box">' +
+        '<h3>LEMBAR PENILAIAN DOSEN</h3>' +
+        '<table class="lj-nilai-table">' +
+        '<tr><th>Aspek Penilaian</th><th>Nilai (Diisi Dosen)</th></tr>' +
+        '<tr><td>Total Nilai UTS (0-100)</td><td class="lj-nilai-empty">' + (nilai ? nilai.nilai : '................') + '</td></tr>' +
+        '<tr class="lj-total-row"><td><strong>Grade</strong></td><td class="lj-nilai-total">' + (nilai ? nilai.grade : '......') + '</td></tr>' +
+        '</table></div>' +
+        '<div class="lj-ttd-area">' +
+        '<div class="lj-ttd-box"><p>Catatan Dosen:</p>' +
+        '<div class="lj-catatan-box">' + (nilai && nilai.catatan ? escapeHtml(nilai.catatan) : '') + '</div></div>' +
+        '<div class="lj-ttd-box lj-ttd-dosen">' +
+        '<p>Cimahi, ' + formatDateLong(new Date().toISOString()) + '</p>' +
+        '<p><strong>Dosen Pengampu,</strong></p>' +
+        '<div class="lj-ttd-space"></div>' +
+        '<p class="lj-ttd-name"><strong>' + escapeHtml(mk ? mk.dosen : '_____________') + '</strong></p>' +
+        '</div></div>' +
+        '<div class="lj-footer"><p>Sistem UTS Online STAI Al-Musdariyah</p></div>' +
+        '</div>';
+    return html;
+}
+
+function generateJawabanGFormHTML(jaw, mk, nilai) {
+    let gformLink = jaw.jawaban[0] ? jaw.jawaban[0].jawaban.replace('Link: ', '') : '';
+
+    return '<div class="lembar-jawaban" id="lembar-pdf-content">' +
+        '<div class="lj-header">' +
+        '<div class="lj-logo-area"><i class="fas fa-mosque" style="font-size:50px;color:#1a5276;"></i></div>' +
+        '<div class="lj-header-text">' +
+        '<h2>SEKOLAH TINGGI AGAMA ISLAM AL-MUSDARIYAH</h2>' +
+        '<h3>JURUSAN SYARIAH</h3>' +
+        '<h3>PROGRAM STUDI HUKUM EKONOMI SYARIAH</h3>' +
+        '</div></div>' +
+        '<div class="lj-divider"></div>' +
+        '<div class="lj-title"><h2>BUKTI PENGERJAAN UTS - GOOGLE FORM</h2><p>Tahun Akademik 2025 / 2026</p></div>' +
+        '<table class="lj-info-table">' +
+        '<tr><td class="lj-label">Nama</td><td class="lj-colon">:</td><td class="lj-value"><strong>' + escapeHtml(jaw.namaMhs) + '</strong></td>' +
+        '<td class="lj-label">Mata Kuliah</td><td class="lj-colon">:</td><td class="lj-value">' + escapeHtml(mk ? mk.nama : jaw.matkulNama) + '</td></tr>' +
+        '<tr><td class="lj-label">NIM</td><td class="lj-colon">:</td><td class="lj-value"><strong>' + escapeHtml(jaw.nim) + '</strong></td>' +
+        '<td class="lj-label">Dosen</td><td class="lj-colon">:</td><td class="lj-value">' + escapeHtml(mk ? mk.dosen : '-') + '</td></tr>' +
+        '<tr><td class="lj-label">Semester</td><td class="lj-colon">:</td><td class="lj-value">' + jaw.semester + '</td>' +
+        '<td class="lj-label">Tanggal Akses</td><td class="lj-colon">:</td><td class="lj-value">' + formatDateLong(jaw.submittedAt) + '</td></tr>' +
+        '</table>' +
+        '<div style="background:#d5f5e3;border:2px solid #27ae60;border-radius:8px;padding:25px;text-align:center;margin:20px 0;">' +
+        '<i class="fab fa-google" style="font-size:50px;color:#27ae60;margin-bottom:15px;"></i>' +
+        '<h3 style="color:#1e8449;margin-bottom:10px;">Mahasiswa Mengerjakan via Google Form</h3>' +
+        '<p style="color:#555;margin-bottom:15px;">Mahasiswa telah mengakses Google Form berikut pada:</p>' +
+        '<p><strong>' + formatDateLong(jaw.submittedAt) + ' ' + formatTimeOnly(jaw.submittedAt) + '</strong></p>' +
+        '<div style="background:white;padding:12px;border-radius:6px;margin-top:15px;word-break:break-all;font-size:12px;">' +
+        '<i class="fas fa-link"></i> <a href="' + gformLink + '" target="_blank" style="color:#27ae60;">' + escapeHtml(gformLink) + '</a></div>' +
+        '<p style="font-size:12px;color:#777;margin-top:15px;font-style:italic;">⚠️ Jawaban mahasiswa tersimpan di Google Form milik dosen. Silakan cek di Google Form Anda.</p>' +
+        '</div>' +
+        '<div class="lj-nilai-box">' +
+        '<h3>LEMBAR PENILAIAN DOSEN</h3>' +
+        '<table class="lj-nilai-table">' +
+        '<tr><th>Aspek Penilaian</th><th>Nilai</th></tr>' +
+        '<tr><td>Total Nilai UTS</td><td class="lj-nilai-empty">' + (nilai ? nilai.nilai : '................') + '</td></tr>' +
+        '<tr class="lj-total-row"><td><strong>Grade</strong></td><td class="lj-nilai-total">' + (nilai ? nilai.grade : '......') + '</td></tr>' +
+        '</table></div>' +
+        '<div class="lj-ttd-area">' +
+        '<div class="lj-ttd-box"><p>Catatan Dosen:</p><div class="lj-catatan-box">' + (nilai && nilai.catatan ? escapeHtml(nilai.catatan) : '') + '</div></div>' +
+        '<div class="lj-ttd-box lj-ttd-dosen">' +
+        '<p>Cimahi, ' + formatDateLong(new Date().toISOString()) + '</p>' +
+        '<p><strong>Dosen Pengampu,</strong></p>' +
+        '<div class="lj-ttd-space"></div>' +
+        '<p class="lj-ttd-name"><strong>' + escapeHtml(mk ? mk.dosen : '_____________') + '</strong></p>' +
+        '</div></div>' +
+        '</div>';
+}
