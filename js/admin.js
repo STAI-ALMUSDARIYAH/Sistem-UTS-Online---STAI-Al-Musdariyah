@@ -1285,3 +1285,787 @@ async function toolRestoreBackup(e) {
     r.readAsText(f);
     e.target.value = '';
 }
+
+// ========================================
+// ===== PDF DOWNLOAD - KERTAS POLIO =====
+// Cover + Foto-foto jawaban (rapi & profesional)
+// ========================================
+
+// Override fungsi download PDF
+function downloadJawabanPDF() {
+    if (!currentViewJawaban) {
+        alert('Tidak ada data jawaban!');
+        return;
+    }
+
+    let jaw = currentViewJawaban;
+    let mk = DB.getMatkulById(jaw.matkulId);
+    let nilai = DB.getNilai().find(n => String(n.nim) === String(jaw.nim) && n.matkulId === jaw.matkulId);
+
+    // Cek apakah ini mode kertas (foto) atau mode lain
+    if (jaw.mode === 'kertas') {
+        generatePDFKertas(jaw, mk, nilai);
+    } else if (jaw.mode === 'gform') {
+        generatePDFGForm(jaw, mk, nilai);
+    } else {
+        generatePDFOnline(jaw, mk, nilai);
+    }
+}
+
+// Override download dari tombol di tabel
+function downloadJawabanPDFById(nim, matkulId) {
+    let jaw = DB.getJawabanDetail(nim, matkulId);
+    if (!jaw) { alert('Tidak ditemukan!'); return; }
+    let mk = DB.getMatkulById(matkulId);
+    let nilai = DB.getNilai().find(n => String(n.nim) === String(nim) && n.matkulId === matkulId);
+
+    if (jaw.mode === 'kertas') {
+        generatePDFKertas(jaw, mk, nilai);
+    } else if (jaw.mode === 'gform') {
+        generatePDFGForm(jaw, mk, nilai);
+    } else {
+        generatePDFOnline(jaw, mk, nilai);
+    }
+}
+
+// ========================================
+// PDF KERTAS POLIO (Cover + Foto Full Page)
+// ========================================
+async function generatePDFKertas(jaw, mk, nilai) {
+    if (!window.jspdf) {
+        alert('❌ Library jsPDF belum dimuat. Refresh halaman lalu coba lagi.');
+        return;
+    }
+
+    showLoadingAdmin('📄 Membuat PDF...');
+
+    try {
+        const { jsPDF } = window.jspdf;
+        let pdf = new jsPDF('p', 'mm', 'a4');
+        let pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+        let pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+        let margin = 15;
+
+        // ===== HALAMAN 1: COVER =====
+        let y = margin;
+
+        // Header Border
+        pdf.setDrawColor(26, 82, 118);
+        pdf.setLineWidth(1);
+        pdf.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin);
+
+        // Logo area (icon university - kita pakai text)
+        y = margin + 15;
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(26, 82, 118);
+        pdf.text('PROGRAM STUDI HUKUM EKONOMI SYARIAH', pageWidth / 2, y, { align: 'center' });
+
+        y += 6;
+        pdf.setFontSize(10);
+        pdf.text('JURUSAN SYARIAH', pageWidth / 2, y, { align: 'center' });
+
+        y += 6;
+        pdf.setFontSize(13);
+        pdf.text('SEKOLAH TINGGI AGAMA ISLAM AL-MUSDARIYAH', pageWidth / 2, y, { align: 'center' });
+
+        y += 5;
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(80, 80, 80);
+        pdf.text('Jl. K.H. Usman Dhomiri No. 156, Cimahi Tengah - Kota Cimahi', pageWidth / 2, y, { align: 'center' });
+
+        y += 4;
+        pdf.text('Telp: (022) 6633113 | www.stai-almusdariyah.ac.id', pageWidth / 2, y, { align: 'center' });
+
+        // Garis pemisah double
+        y += 5;
+        pdf.setDrawColor(26, 82, 118);
+        pdf.setLineWidth(0.8);
+        pdf.line(margin + 5, y, pageWidth - margin - 5, y);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin + 5, y + 1.5, pageWidth - margin - 5, y + 1.5);
+
+        // Title
+        y += 18;
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text('LEMBAR JAWABAN', pageWidth / 2, y, { align: 'center' });
+
+        y += 8;
+        pdf.text('UJIAN TENGAH SEMESTER (UTS)', pageWidth / 2, y, { align: 'center' });
+
+        y += 7;
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'italic');
+        pdf.text('Tahun Akademik 2025 / 2026', pageWidth / 2, y, { align: 'center' });
+
+        // Mode Badge
+        y += 12;
+        pdf.setFillColor(230, 126, 34);
+        pdf.roundedRect(pageWidth / 2 - 35, y - 5, 70, 8, 2, 2, 'F');
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text('📝 KERTAS POLIO (UPLOAD FOTO)', pageWidth / 2, y, { align: 'center' });
+
+        // ===== INFO MAHASISWA TABLE =====
+        y += 20;
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('IDENTITAS MAHASISWA', pageWidth / 2, y, { align: 'center' });
+
+        y += 5;
+        pdf.setDrawColor(26, 82, 118);
+        pdf.line(pageWidth / 2 - 30, y, pageWidth / 2 + 30, y);
+
+        y += 10;
+        let labelX = margin + 10;
+        let colonX = margin + 50;
+        let valueX = margin + 55;
+        let lineHeight = 9;
+
+        pdf.setFontSize(10);
+        let infoData = [
+            ['Nama Mahasiswa', jaw.namaMhs || '-'],
+            ['NIM', jaw.nim || '-'],
+            ['Semester', jaw.semester ? 'Semester ' + jaw.semester : '-'],
+            ['Kelas', 'RPL (Non Reguler)'],
+            ['Mata Kuliah', mk ? mk.nama : (jaw.matkulNama || '-')],
+            ['Dosen Pengampu', mk ? mk.dosen : '-'],
+            ['Hari/Tanggal Submit', formatDateLongPDF(jaw.submittedAt)],
+            ['Waktu Submit', formatTimeOnlyPDF(jaw.submittedAt)],
+            ['Jumlah Halaman', (jaw.jawaban ? jaw.jawaban.length : 0) + ' foto']
+        ];
+
+        infoData.forEach(([label, value]) => {
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(label, labelX, y);
+            pdf.text(':', colonX, y);
+            pdf.setFont('helvetica', 'normal');
+            
+            // Multi-line text untuk value yang panjang
+            let lines = pdf.splitTextToSize(String(value), pageWidth - valueX - margin - 5);
+            pdf.text(lines, valueX, y);
+            y += lineHeight + (lines.length - 1) * 5;
+        });
+
+        // Box untuk nilai dosen
+        y += 10;
+        pdf.setDrawColor(26, 82, 118);
+        pdf.setLineWidth(0.5);
+        let nilaiBoxY = y;
+        let nilaiBoxHeight = 35;
+        pdf.rect(margin + 10, nilaiBoxY, pageWidth - 2 * margin - 20, nilaiBoxHeight);
+
+        // Header nilai box
+        pdf.setFillColor(26, 82, 118);
+        pdf.rect(margin + 10, nilaiBoxY, pageWidth - 2 * margin - 20, 7, 'F');
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text('PENILAIAN DOSEN', pageWidth / 2, nilaiBoxY + 5, { align: 'center' });
+
+        // Isi nilai box
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        let yNilai = nilaiBoxY + 14;
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Nilai Akhir UTS:', margin + 15, yNilai);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(': ' + (nilai ? nilai.nilai : '..............................'), margin + 65, yNilai);
+
+        yNilai += 7;
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Grade:', margin + 15, yNilai);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(': ' + (nilai ? nilai.grade : '....'), margin + 65, yNilai);
+
+        // Tanda Tangan area
+        y = nilaiBoxY + nilaiBoxHeight + 15;
+        if (y < pageHeight - 60) {
+            let ttdX = pageWidth - margin - 70;
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Cimahi, ' + formatDateLongPDF(new Date().toISOString()), ttdX, y, { align: 'center' });
+            
+            y += 6;
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Dosen Pengampu,', ttdX, y, { align: 'center' });
+            
+            y += 25; // ruang ttd
+            pdf.line(ttdX - 30, y, ttdX + 30, y);
+            
+            y += 5;
+            pdf.setFont('helvetica', 'bold');
+            let dosenName = mk ? mk.dosen : '_____________________';
+            let dosenLines = pdf.splitTextToSize(dosenName, 70);
+            pdf.text(dosenLines, ttdX, y, { align: 'center' });
+        }
+
+        // Footer halaman 1
+        let footerY = pageHeight - margin - 5;
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'italic');
+        pdf.setTextColor(150, 150, 150);
+        pdf.text('Sistem UTS Online STAI Al-Musdariyah | Halaman 1', pageWidth / 2, footerY, { align: 'center' });
+
+        // ===== HALAMAN 2+: FOTO JAWABAN =====
+        if (jaw.jawaban && jaw.jawaban.length > 0) {
+            for (let i = 0; i < jaw.jawaban.length; i++) {
+                let fotoItem = jaw.jawaban[i];
+                if (!fotoItem.fotoData) continue;
+
+                pdf.addPage();
+
+                // Header tiap halaman foto
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(80, 80, 80);
+                pdf.text(jaw.namaMhs + ' (' + jaw.nim + ')', margin, margin);
+                pdf.text(mk ? mk.nama : jaw.matkulNama, pageWidth - margin, margin, { align: 'right' });
+
+                // Garis bawah header
+                pdf.setDrawColor(200, 200, 200);
+                pdf.setLineWidth(0.3);
+                pdf.line(margin, margin + 3, pageWidth - margin, margin + 3);
+
+                // Title halaman foto
+                pdf.setFontSize(11);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(26, 82, 118);
+                pdf.text('LEMBAR JAWABAN - HALAMAN ' + (i + 1) + ' DARI ' + jaw.jawaban.length, 
+                        pageWidth / 2, margin + 12, { align: 'center' });
+
+                // Tampilkan foto - calculate size to fit
+                try {
+                    let imgY = margin + 18;
+                    let availableWidth = pageWidth - 2 * margin;
+                    let availableHeight = pageHeight - imgY - margin - 8; // sisain footer
+
+                    // Get image dimensions
+                    let imgProps = pdf.getImageProperties(fotoItem.fotoData);
+                    let imgRatio = imgProps.width / imgProps.height;
+
+                    let imgWidth, imgHeight;
+                    
+                    if (imgRatio > availableWidth / availableHeight) {
+                        // Image lebih landscape, fit by width
+                        imgWidth = availableWidth;
+                        imgHeight = imgWidth / imgRatio;
+                    } else {
+                        // Image lebih portrait, fit by height
+                        imgHeight = availableHeight;
+                        imgWidth = imgHeight * imgRatio;
+                    }
+
+                    // Center the image
+                    let imgX = (pageWidth - imgWidth) / 2;
+                    let imgYCentered = imgY + (availableHeight - imgHeight) / 2;
+
+                    // Border untuk foto
+                    pdf.setDrawColor(150, 150, 150);
+                    pdf.setLineWidth(0.5);
+                    pdf.rect(imgX - 1, imgYCentered - 1, imgWidth + 2, imgHeight + 2);
+
+                    // Insert image
+                    pdf.addImage(fotoItem.fotoData, 'JPEG', imgX, imgYCentered, imgWidth, imgHeight);
+                } catch (imgErr) {
+                    console.error('Error inserting image:', imgErr);
+                    pdf.setFontSize(10);
+                    pdf.setTextColor(231, 76, 60);
+                    pdf.text('❌ Gagal memuat foto halaman ' + (i + 1), pageWidth / 2, pageHeight / 2, { align: 'center' });
+                }
+
+                // Footer
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'italic');
+                pdf.setTextColor(150, 150, 150);
+                pdf.text('Halaman ' + (i + 2) + ' (Foto Jawaban ' + (i + 1) + '/' + jaw.jawaban.length + ')', 
+                        pageWidth / 2, pageHeight - margin + 3, { align: 'center' });
+            }
+        }
+
+        // ===== SAVE PDF =====
+        let nameSafe = (jaw.namaMhs || 'Mahasiswa').replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
+        let mkSafe = (mk ? mk.nama : 'Matkul').replace(/[^a-zA-Z0-9]/g, '_');
+        let filename = 'UTS_' + jaw.nim + '_' + nameSafe + '_' + mkSafe + '.pdf';
+
+        pdf.save(filename);
+        DB.addActivity('Download PDF UTS: ' + jaw.namaMhs + ' - ' + (mk ? mk.nama : ''));
+
+        hideLoadingAdmin();
+        setTimeout(() => {
+            alert('✅ PDF berhasil di-download!\n\nFile: ' + filename);
+        }, 300);
+
+    } catch (err) {
+        hideLoadingAdmin();
+        console.error('PDF Error:', err);
+        alert('❌ Gagal membuat PDF: ' + err.message);
+    }
+}
+
+// ========================================
+// PDF GOOGLE FORM
+// ========================================
+async function generatePDFGForm(jaw, mk, nilai) {
+    if (!window.jspdf) { alert('Library belum dimuat'); return; }
+    showLoadingAdmin('Membuat PDF...');
+
+    try {
+        const { jsPDF } = window.jspdf;
+        let pdf = new jsPDF('p', 'mm', 'a4');
+        let pageWidth = pdf.internal.pageSize.getWidth();
+        let pageHeight = pdf.internal.pageSize.getHeight();
+        let margin = 15;
+
+        // Border halaman
+        pdf.setDrawColor(26, 82, 118);
+        pdf.setLineWidth(1);
+        pdf.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin);
+
+        // Header
+        let y = margin + 15;
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(26, 82, 118);
+        pdf.text('PROGRAM STUDI HUKUM EKONOMI SYARIAH', pageWidth / 2, y, { align: 'center' });
+
+        y += 6;
+        pdf.text('JURUSAN SYARIAH', pageWidth / 2, y, { align: 'center' });
+
+        y += 6;
+        pdf.setFontSize(13);
+        pdf.text('SEKOLAH TINGGI AGAMA ISLAM AL-MUSDARIYAH', pageWidth / 2, y, { align: 'center' });
+
+        y += 5;
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(80, 80, 80);
+        pdf.text('Jl. K.H. Usman Dhomiri No. 156, Cimahi Tengah', pageWidth / 2, y, { align: 'center' });
+
+        y += 5;
+        pdf.setDrawColor(26, 82, 118);
+        pdf.line(margin + 5, y, pageWidth - margin - 5, y);
+        pdf.line(margin + 5, y + 1.5, pageWidth - margin - 5, y + 1.5);
+
+        // Title
+        y += 18;
+        pdf.setFontSize(15);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text('BUKTI PENGERJAAN UTS', pageWidth / 2, y, { align: 'center' });
+
+        y += 7;
+        pdf.text('VIA GOOGLE FORM', pageWidth / 2, y, { align: 'center' });
+
+        y += 7;
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'italic');
+        pdf.text('Tahun Akademik 2025 / 2026', pageWidth / 2, y, { align: 'center' });
+
+        // Mode badge
+        y += 12;
+        pdf.setFillColor(39, 174, 96);
+        pdf.roundedRect(pageWidth / 2 - 30, y - 5, 60, 8, 2, 2, 'F');
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text('📋 GOOGLE FORM', pageWidth / 2, y, { align: 'center' });
+
+        // Identitas
+        y += 18;
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('IDENTITAS MAHASISWA', pageWidth / 2, y, { align: 'center' });
+
+        y += 5;
+        pdf.line(pageWidth / 2 - 30, y, pageWidth / 2 + 30, y);
+
+        y += 10;
+        pdf.setFontSize(10);
+        let infoData = [
+            ['Nama', jaw.namaMhs],
+            ['NIM', jaw.nim],
+            ['Semester', 'Semester ' + jaw.semester],
+            ['Mata Kuliah', mk ? mk.nama : jaw.matkulNama],
+            ['Dosen', mk ? mk.dosen : '-'],
+            ['Tanggal Akses', formatDateLongPDF(jaw.submittedAt)],
+            ['Waktu Akses', formatTimeOnlyPDF(jaw.submittedAt)]
+        ];
+        infoData.forEach(([l, v]) => {
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(l, margin + 10, y);
+            pdf.text(':', margin + 50, y);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(String(v), margin + 55, y);
+            y += 8;
+        });
+
+        // Info Google Form
+        y += 8;
+        pdf.setFillColor(213, 245, 227);
+        pdf.roundedRect(margin + 10, y, pageWidth - 2 * margin - 20, 30, 2, 2, 'F');
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(30, 132, 73);
+        pdf.text('Mahasiswa telah membuka & mengerjakan Google Form pada:', pageWidth / 2, y + 8, { align: 'center' });
+        pdf.setFontSize(11);
+        pdf.text(formatDateLongPDF(jaw.submittedAt) + ' ' + formatTimeOnlyPDF(jaw.submittedAt), pageWidth / 2, y + 16, { align: 'center' });
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'italic');
+        pdf.setTextColor(80, 80, 80);
+        pdf.text('Jawaban tersimpan di Google Form milik dosen.', pageWidth / 2, y + 23, { align: 'center' });
+
+        // Nilai Box
+        y += 40;
+        pdf.setTextColor(0, 0, 0);
+        pdf.setDrawColor(26, 82, 118);
+        pdf.rect(margin + 10, y, pageWidth - 2 * margin - 20, 30);
+        pdf.setFillColor(26, 82, 118);
+        pdf.rect(margin + 10, y, pageWidth - 2 * margin - 20, 7, 'F');
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(255, 255, 255);
+        pdf.text('PENILAIAN DOSEN', pageWidth / 2, y + 5, { align: 'center' });
+        
+        pdf.setTextColor(0, 0, 0);
+        pdf.text('Nilai:', margin + 15, y + 14);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(': ' + (nilai ? nilai.nilai : '...........'), margin + 50, y + 14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Grade:', margin + 15, y + 22);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(': ' + (nilai ? nilai.grade : '....'), margin + 50, y + 22);
+
+        // TTD
+        y += 45;
+        let ttdX = pageWidth - margin - 70;
+        pdf.setFontSize(10);
+        pdf.text('Cimahi, ' + formatDateLongPDF(new Date().toISOString()), ttdX, y, { align: 'center' });
+        y += 6;
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Dosen Pengampu,', ttdX, y, { align: 'center' });
+        y += 25;
+        pdf.line(ttdX - 30, y, ttdX + 30, y);
+        y += 5;
+        pdf.text(mk ? mk.dosen : '_____________________', ttdX, y, { align: 'center' });
+
+        // Footer
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'italic');
+        pdf.setTextColor(150, 150, 150);
+        pdf.text('Sistem UTS Online STAI Al-Musdariyah', pageWidth / 2, pageHeight - margin - 5, { align: 'center' });
+
+        let nameSafe = (jaw.namaMhs || 'Mhs').replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
+        let mkSafe = (mk ? mk.nama : 'Matkul').replace(/[^a-zA-Z0-9]/g, '_');
+        pdf.save('UTS_' + jaw.nim + '_' + nameSafe + '_' + mkSafe + '.pdf');
+        
+        hideLoadingAdmin();
+        DB.addActivity('Download PDF: ' + jaw.namaMhs);
+        alert('✅ PDF berhasil!');
+    } catch (err) {
+        hideLoadingAdmin();
+        alert('❌ Error: ' + err.message);
+    }
+}
+
+// ========================================
+// PDF UJIAN ONLINE
+// ========================================
+async function generatePDFOnline(jaw, mk, nilai) {
+    if (!window.jspdf) { alert('Library belum dimuat'); return; }
+    showLoadingAdmin('Membuat PDF...');
+
+    try {
+        const { jsPDF } = window.jspdf;
+        let pdf = new jsPDF('p', 'mm', 'a4');
+        let pageWidth = pdf.internal.pageSize.getWidth();
+        let pageHeight = pdf.internal.pageSize.getHeight();
+        let margin = 15;
+        let y = margin;
+
+        // Header
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(26, 82, 118);
+        pdf.text('PROGRAM STUDI HUKUM EKONOMI SYARIAH', pageWidth / 2, y + 5, { align: 'center' });
+        pdf.text('SEKOLAH TINGGI AGAMA ISLAM AL-MUSDARIYAH', pageWidth / 2, y + 11, { align: 'center' });
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(80, 80, 80);
+        pdf.text('Jl. K.H. Usman Dhomiri No. 156, Cimahi Tengah', pageWidth / 2, y + 16, { align: 'center' });
+
+        y += 21;
+        pdf.setDrawColor(26, 82, 118);
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, y, pageWidth - margin, y);
+
+        y += 8;
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(13);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('LEMBAR JAWABAN UTS', pageWidth / 2, y, { align: 'center' });
+
+        // Info
+        y += 10;
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('Nama: ' + jaw.namaMhs + ' | NIM: ' + jaw.nim + ' | Semester: ' + jaw.semester, margin, y);
+        y += 5;
+        pdf.text('Mata Kuliah: ' + (mk ? mk.nama : jaw.matkulNama), margin, y);
+        y += 5;
+        pdf.text('Dosen: ' + (mk ? mk.dosen : '-') + ' | Submit: ' + formatDateLongPDF(jaw.submittedAt), margin, y);
+
+        y += 8;
+        pdf.line(margin, y, pageWidth - margin, y);
+
+        // Soal & Jawaban
+        if (jaw.jawaban) {
+            jaw.jawaban.forEach((j, i) => {
+                if (y > pageHeight - 30) { pdf.addPage(); y = margin; }
+
+                y += 6;
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(10);
+                pdf.setTextColor(26, 82, 118);
+                pdf.text('Soal ' + (i + 1) + ' (Bobot: ' + (j.bobot || 10) + ')', margin, y);
+
+                y += 5;
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(9);
+                pdf.setTextColor(0, 0, 0);
+                let qLines = pdf.splitTextToSize(j.pertanyaan || '', pageWidth - 2 * margin);
+                qLines.forEach(line => {
+                    if (y > pageHeight - 15) { pdf.addPage(); y = margin; }
+                    pdf.text(line, margin, y);
+                    y += 4.5;
+                });
+
+                y += 3;
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Jawaban:', margin, y);
+                y += 4;
+                pdf.setFont('helvetica', 'normal');
+
+                let ansText = '';
+                if (j.tipe === 'pilihan') {
+                    ansText = 'Pilihan: ' + (j.pilihan ? j.pilihan.join(', ') : '-');
+                    if (j.alasan) ansText += '\nAlasan: ' + j.alasan;
+                } else {
+                    ansText = j.jawaban || '(Tidak dijawab)';
+                }
+                let aLines = pdf.splitTextToSize(ansText, pageWidth - 2 * margin - 5);
+                aLines.forEach(line => {
+                    if (y > pageHeight - 15) { pdf.addPage(); y = margin; }
+                    pdf.text(line, margin + 5, y);
+                    y += 4.5;
+                });
+
+                y += 3;
+                pdf.setDrawColor(220, 220, 220);
+                pdf.line(margin, y, pageWidth - margin, y);
+            });
+        }
+
+        // Nilai
+        if (y > pageHeight - 50) { pdf.addPage(); y = margin; }
+        y += 10;
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.text('Nilai: ' + (nilai ? nilai.nilai : '....') + ' | Grade: ' + (nilai ? nilai.grade : '....'), margin, y);
+
+        y += 15;
+        pdf.text('Cimahi, ' + formatDateLongPDF(new Date().toISOString()), pageWidth - margin - 70, y, { align: 'center' });
+        y += 6;
+        pdf.text('Dosen Pengampu,', pageWidth - margin - 70, y, { align: 'center' });
+        y += 22;
+        pdf.line(pageWidth - margin - 95, y, pageWidth - margin - 45, y);
+        y += 5;
+        pdf.text(mk ? mk.dosen : '____________', pageWidth - margin - 70, y, { align: 'center' });
+
+        let nameSafe = (jaw.namaMhs || 'Mhs').replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
+        let mkSafe = (mk ? mk.nama : 'Matkul').replace(/[^a-zA-Z0-9]/g, '_');
+        pdf.save('UTS_' + jaw.nim + '_' + nameSafe + '_' + mkSafe + '.pdf');
+        
+        hideLoadingAdmin();
+        DB.addActivity('Download PDF: ' + jaw.namaMhs);
+        alert('✅ PDF berhasil!');
+    } catch (err) {
+        hideLoadingAdmin();
+        alert('❌ Error: ' + err.message);
+    }
+}
+
+// ========================================
+// HELPER FUNCTIONS
+// ========================================
+function formatDateLongPDF(iso) {
+    if (!iso) return '-';
+    let d = new Date(iso);
+    let bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    let hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    return hari[d.getDay()] + ', ' + d.getDate() + ' ' + bulan[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function formatTimeOnlyPDF(iso) {
+    if (!iso) return '-';
+    let d = new Date(iso);
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ' WIB';
+}
+
+// ========================================
+// DOWNLOAD ALL PDF (per matkul, dengan filter)
+// ========================================
+async function downloadAllPDF() {
+    let mk = document.getElementById('filter-matkul-hasil').value;
+    let sem = document.getElementById('filter-semester-hasil').value;
+    let jawaban = DB.getJawaban().filter(j => (!mk || j.matkulId === mk) && (!sem || j.semester === sem));
+
+    if (jawaban.length === 0) {
+        alert('Tidak ada jawaban untuk di-download!');
+        return;
+    }
+
+    if (!confirm('📥 Download ' + jawaban.length + ' file PDF?\n\nSetiap mahasiswa akan punya 1 file PDF.\nProses memakan waktu beberapa detik per file.\n\nLanjutkan?')) return;
+
+    for (let i = 0; i < jawaban.length; i++) {
+        let jaw = jawaban[i];
+        let mkObj = DB.getMatkulById(jaw.matkulId);
+        let nilai = DB.getNilai().find(n => String(n.nim) === String(jaw.nim) && n.matkulId === jaw.matkulId);
+
+        showLoadingAdmin('Membuat PDF ' + (i + 1) + ' / ' + jawaban.length + '...\n' + jaw.namaMhs);
+
+        try {
+            if (jaw.mode === 'kertas') {
+                await generatePDFKertas(jaw, mkObj, nilai);
+            } else if (jaw.mode === 'gform') {
+                await generatePDFGForm(jaw, mkObj, nilai);
+            } else {
+                await generatePDFOnline(jaw, mkObj, nilai);
+            }
+            await sleepAdmin(800); // delay biar gak overload
+        } catch (err) {
+            console.error('Failed for', jaw.namaMhs, err);
+        }
+    }
+
+    hideLoadingAdmin();
+    alert('✅ Selesai download ' + jawaban.length + ' PDF!');
+}
+
+function sleepAdmin(ms) {
+    return new Promise(r => setTimeout(r, ms));
+}
+
+// ========================================
+// REKAP NILAI PDF
+// ========================================
+async function downloadRekapNilai() {
+    if (!window.jspdf) { alert('Library belum dimuat!'); return; }
+    let mk = document.getElementById('filter-matkul-hasil').value;
+    let sem = document.getElementById('filter-semester-hasil').value;
+    let jawaban = DB.getJawaban().filter(j => (!mk || j.matkulId === mk) && (!sem || j.semester === sem));
+    if (jawaban.length === 0) { alert('Tidak ada data!'); return; }
+
+    showLoadingAdmin('Membuat rekap nilai...');
+
+    try {
+        const { jsPDF } = window.jspdf;
+        let pdf = new jsPDF('p', 'mm', 'a4');
+        let nilaiAll = DB.getNilai();
+        let pageWidth = pdf.internal.pageSize.getWidth();
+
+        // Header
+        pdf.setFontSize(13);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(26, 82, 118);
+        pdf.text('STAI AL-MUSDARIYAH KOTA CIMAHI', pageWidth / 2, 15, { align: 'center' });
+        pdf.setFontSize(11);
+        pdf.text('PROGRAM STUDI HUKUM EKONOMI SYARIAH', pageWidth / 2, 21, { align: 'center' });
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(80, 80, 80);
+        pdf.text('Jl. K.H. Usman Dhomiri No. 156, Cimahi Tengah', pageWidth / 2, 27, { align: 'center' });
+        pdf.setDrawColor(26, 82, 118);
+        pdf.line(15, 31, pageWidth - 15, 31);
+
+        pdf.setFontSize(13);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text('REKAP NILAI UJIAN TENGAH SEMESTER (UTS)', pageWidth / 2, 40, { align: 'center' });
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('Tahun Akademik 2025 / 2026', pageWidth / 2, 46, { align: 'center' });
+
+        let infoY = 54;
+        if (mk) {
+            let mkObj = DB.getMatkulById(mk);
+            pdf.text('Mata Kuliah : ' + mkObj.nama, 15, infoY);
+            pdf.text('Dosen          : ' + mkObj.dosen, 15, infoY + 5);
+            infoY += 12;
+        } else {
+            pdf.text('Mata Kuliah : SEMUA MATA KULIAH', 15, infoY);
+            infoY += 8;
+        }
+
+        // Header Tabel
+        let startY = infoY + 5;
+        pdf.setFillColor(26, 82, 118);
+        pdf.rect(15, startY - 5, pageWidth - 30, 7, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('No', 18, startY);
+        pdf.text('NIM', 28, startY);
+        pdf.text('Nama', 60, startY);
+        if (!mk) pdf.text('Mata Kuliah', 110, startY);
+        pdf.text('Nilai', 160, startY);
+        pdf.text('Grade', 175, startY);
+        pdf.text('Status', 188, startY);
+
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFont('helvetica', 'normal');
+        let y = startY + 7;
+
+        jawaban.forEach((j, i) => {
+            if (y > 270) { pdf.addPage(); y = 20; }
+            let mkObj = DB.getMatkulById(j.matkulId);
+            let n = nilaiAll.find(x => String(x.nim) === String(j.nim) && x.matkulId === j.matkulId);
+            pdf.text(String(i + 1), 18, y);
+            pdf.text(j.nim, 28, y);
+            pdf.text(truncatePDF(j.namaMhs, 22), 60, y);
+            if (!mk) pdf.text(truncatePDF(mkObj ? mkObj.nama : '-', 22), 110, y);
+            pdf.text(n ? String(n.nilai) : '-', 160, y);
+            pdf.text(n ? n.grade : '-', 175, y);
+            pdf.text(n ? n.status : 'Pending', 188, y);
+            y += 6;
+        });
+
+        y += 15;
+        if (y > 250) { pdf.addPage(); y = 30; }
+        pdf.text('Cimahi, ' + formatDateLongPDF(new Date().toISOString()), 130, y);
+        pdf.text('Mengetahui,', 130, y + 6);
+        pdf.text('Kaprodi HES,', 130, y + 12);
+        pdf.text('_________________________', 130, y + 35);
+
+        let now = new Date();
+        let ds = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+        pdf.save('REKAP_NILAI_UTS_' + ds + '.pdf');
+
+        hideLoadingAdmin();
+        DB.addActivity('Download rekap nilai PDF');
+        alert('✅ Rekap nilai berhasil di-download!');
+    } catch (err) {
+        hideLoadingAdmin();
+        alert('❌ Gagal: ' + err.message);
+    }
+}
+
+function truncatePDF(str, n) {
+    return str.length > n ? str.substring(0, n - 1) + '…' : str;
+}
